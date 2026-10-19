@@ -73,6 +73,10 @@ interface SimklSnapshot {
   watched: { local: string[]; remote: string[] };
 }
 
+interface SimklHistoryResponse {
+  not_found?: Record<string, unknown[]>;
+}
+
 interface SyncResult {
   watchlist: SavedMedia[];
   watched: WatchedItem[];
@@ -348,6 +352,13 @@ function groupWatched(media: WatchedItem[]) {
   return { movies, shows: [...showMap.values()] };
 }
 
+function countNotFound(response: SimklHistoryResponse) {
+  return Object.values(response.not_found ?? {}).reduce(
+    (count, items) => count + (Array.isArray(items) ? items.length : 0),
+    0
+  );
+}
+
 async function loadTmdbDetails(
   type: SavedMedia['type'],
   id: string
@@ -410,7 +421,7 @@ export const simklAPI = {
   async syncLibrary(localWatchlist: SavedMedia[], localWatched: WatchedItem[]): Promise<SyncResult> {
     const remoteWatchlistMovies = await simklRequest<{ movies?: SimklItem[] }>('/sync/all-items/movies/plantowatch');
     const remoteWatchlistShows = await simklRequest<{ shows?: SimklItem[] }>('/sync/all-items/shows/plantowatch');
-    const remoteLibrary = await simklRequest<{ movies?: SimklItem[]; shows?: SimklItem[] }>('/sync/all-items?extended=full&include_all_episodes=original&episode_watched_at=yes');
+    const remoteLibrary = await simklRequest<{ movies?: SimklItem[]; shows?: SimklItem[] }>('/sync/all-items?extended=full&include_all_episodes=yes&episode_watched_at=yes');
     const remoteTrackedTitles = [
       ...unwrapItems(remoteLibrary, 'movie').map((entry) => ({ type: 'movie' as const, title: entry.movie! })),
       ...unwrapItems(remoteLibrary, 'tv').map((entry) => ({ type: 'tv' as const, title: entry.show! })),
@@ -530,7 +541,15 @@ export const simklAPI = {
     const currentWatchedKeys = new Set(nextWatched.map(watchedKey));
     const addWatched = nextWatched.filter((entry) => !remoteWatchedSet.has(watchedKey(entry)));
     if (addWatched.length) {
-      await simklRequest('/sync/history', 'POST', groupWatched(addWatched));
+      const historyResponse = await simklRequest<SimklHistoryResponse>(
+        '/sync/history',
+        'POST',
+        groupWatched(addWatched)
+      );
+      const notFoundCount = countNotFound(historyResponse);
+      if (notFoundCount > 0) {
+        throw new Error(`Simkl did not recognize ${notFoundCount} watched item(s). Check that the items have valid TMDB IDs, then sync again.`);
+      }
       addedToSimkl += addWatched.length;
       for (const entry of addWatched) remoteWatchedSet.add(watchedKey(entry));
     }
