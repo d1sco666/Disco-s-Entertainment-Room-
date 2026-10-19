@@ -1,28 +1,27 @@
 import type { AnimeTitle } from '../types';
 
-const JIKAN_API_URL = 'https://api.jikan.moe/v4';
 const ANILIST_API_URL = 'https://graphql.anilist.co';
 
 export const animeGenres = [
-  { id: 1, name: 'Action' },
-  { id: 2, name: 'Adventure' },
-  { id: 5, name: 'Avant Garde' },
-  { id: 46, name: 'Award Winning' },
-  { id: 28, name: 'Boys Love' },
-  { id: 4, name: 'Comedy' },
-  { id: 8, name: 'Drama' },
-  { id: 9, name: 'Ecchi' },
-  { id: 10, name: 'Fantasy' },
-  { id: 26, name: 'Girls Love' },
-  { id: 47, name: 'Gourmet' },
-  { id: 14, name: 'Horror' },
-  { id: 7, name: 'Mystery' },
-  { id: 22, name: 'Romance' },
-  { id: 24, name: 'Sci-Fi' },
-  { id: 36, name: 'Slice of Life' },
-  { id: 30, name: 'Sports' },
-  { id: 37, name: 'Supernatural' },
-  { id: 41, name: 'Suspense' },
+  { id: 'Action', name: 'Action' },
+  { id: 'Adventure', name: 'Adventure' },
+  { id: 'Avant Garde', name: 'Avant Garde' },
+  { id: 'Award Winning', name: 'Award Winning' },
+  { id: 'Boys Love', name: 'Boys Love' },
+  { id: 'Comedy', name: 'Comedy' },
+  { id: 'Drama', name: 'Drama' },
+  { id: 'Ecchi', name: 'Ecchi' },
+  { id: 'Fantasy', name: 'Fantasy' },
+  { id: 'Girls Love', name: 'Girls Love' },
+  { id: 'Gourmet', name: 'Gourmet' },
+  { id: 'Horror', name: 'Horror' },
+  { id: 'Mystery', name: 'Mystery' },
+  { id: 'Romance', name: 'Romance' },
+  { id: 'Sci-Fi', name: 'Sci-Fi' },
+  { id: 'Slice of Life', name: 'Slice of Life' },
+  { id: 'Sports', name: 'Sports' },
+  { id: 'Supernatural', name: 'Supernatural' },
+  { id: 'Suspense', name: 'Suspense' },
 ];
 
 export const animeAgeRatings = [
@@ -32,43 +31,6 @@ export const animeAgeRatings = [
   { value: 'r17', label: 'R - 17+ (violence & profanity)' },
   { value: 'r', label: 'R+ - Mild nudity' },
 ];
-
-interface JikanAnime {
-  mal_id: number;
-  url: string;
-  title: string;
-  title_english: string | null;
-  title_japanese: string | null;
-  synopsis: string | null;
-  year: number | null;
-  aired: { from: string | null } | null;
-  images: { webp?: { large_image_url?: string; image_url?: string }; jpg?: { large_image_url?: string; image_url?: string } };
-  score: number | null;
-  rating: string | null;
-  episodes: number | null;
-  status: string | null;
-  genres: { mal_id: number; name: string }[];
-  themes: { mal_id: number; name: string }[];
-}
-
-interface JikanResponse<T> {
-  data: T;
-  pagination?: { last_visible_page: number; has_next_page: boolean };
-}
-
-const EXPLICIT_GENRE_IDS = new Set([12, 49]);
-
-function isExplicitJikanAnime(anime: JikanAnime): boolean {
-  return /\brx\b|hentai/i.test(anime.rating || '')
-    || anime.genres.some(({ mal_id, name }) => (
-      EXPLICIT_GENRE_IDS.has(mal_id) || /^(hentai|erotica)$/i.test(name)
-    ));
-}
-
-export function isExplicitAnimeTitle(item: Pick<AnimeTitle, 'ageRating' | 'genres'>): boolean {
-  return /\brx\b|hentai/i.test(item.ageRating)
-    || item.genres.some((genre) => /^(hentai|erotica)$/i.test(genre));
-}
 
 interface AniListMedia {
   id: number;
@@ -81,15 +43,26 @@ interface AniListMedia {
   averageScore: number | null;
   episodes: number | null;
   startDate: { year: number | null };
+  status: string | null;
+  isAdult: boolean;
+  siteUrl: string;
+}
+
+interface AniListPageInfo {
+  total: number;
+  perPage: number;
+  currentPage: number;
+  lastPage: number;
+  hasNextPage: boolean;
 }
 
 interface AniListResponse {
-  data?: { Page?: { media?: AniListMedia[] } };
+  data?: { Page?: { pageInfo?: AniListPageInfo; media?: AniListMedia[] }; Media?: AniListMedia };
   errors?: { message?: string }[];
 }
 
 export interface AnimeSearchFilters {
-  genreId: number | null;
+  genreId: string | null;
   ageRating: string;
   sortBy: 'popular' | 'top_rated';
   year: number | null;
@@ -113,127 +86,146 @@ export interface AnimeDetailsResult {
   warning: string | null;
 }
 
-async function jikanRequest<T>(path: string): Promise<JikanResponse<T>> {
-  const response = await fetch(`${JIKAN_API_URL}${path}`);
-  if (!response.ok) {
-    throw new Error(`MyAnimeList catalog request failed (${response.status}). Please try again shortly.`);
-  }
-  return response.json() as Promise<JikanResponse<T>>;
+export function isExplicitAnimeTitle(item: Pick<AnimeTitle, 'ageRating' | 'genres'>): boolean {
+  return /\brx\b|hentai/i.test(item.ageRating)
+    || item.genres.some((genre) => /^(hentai|erotica)$/i.test(genre));
 }
 
-async function getAniListMatches(malIds: number[], signal?: AbortSignal): Promise<Map<number, AniListMedia>> {
-  if (malIds.length === 0) return new Map();
-
+async function anilistRequest(query: string, variables: Record<string, unknown>, signal?: AbortSignal): Promise<AniListResponse> {
   const response = await fetch(ANILIST_API_URL, {
     method: 'POST',
     signal,
     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      query: `
-        query ($malIds: [Int]) {
-          Page(page: 1, perPage: 50) {
-            media(idMal_in: $malIds, type: ANIME) {
-              id
-              idMal
-              title { english romaji native }
-              description(asHtml: false)
-              genres
-              coverImage { large extraLarge }
-              bannerImage
-              averageScore
-              episodes
-              startDate { year }
-            }
-          }
-        }
-      `,
-      variables: { malIds },
-    }),
+    body: JSON.stringify({ query, variables }),
   });
-
   if (!response.ok) {
-    throw new Error(`AniList ID lookup failed (${response.status}).`);
+    throw new Error(`AniList request failed (${response.status}).`);
   }
-
   const result = await response.json() as AniListResponse;
   if (result.errors?.length) {
-    throw new Error(result.errors.map((error) => error.message || 'AniList lookup failed.').join(' '));
+    throw new Error(result.errors.map((error) => error.message || 'AniList request failed.').join(' '));
   }
-
-  return new Map((result.data?.Page?.media ?? [])
-    .filter((media): media is AniListMedia & { idMal: number } => typeof media.idMal === 'number')
-    .map((media) => [media.idMal, media]));
+  return result;
 }
 
-function mapAnime(anime: JikanAnime, aniList?: AniListMedia): AnimeTitle {
-  const malId = anime.mal_id;
-  const year = anime.year
-    ?? (anime.aired?.from ? Number(anime.aired.from.slice(0, 4)) : null)
-    ?? aniList?.startDate.year
-    ?? 0;
-  const poster = anime.images.webp?.large_image_url
-    || anime.images.webp?.image_url
-    || anime.images.jpg?.large_image_url
-    || anime.images.jpg?.image_url
-    || '';
+function mapAnime(media: AniListMedia): AnimeTitle {
+  const malId = media.idMal ?? media.id;
+  const poster = media.coverImage?.extraLarge ?? media.coverImage?.large ?? '';
 
   return {
     id: String(malId),
     malId,
-    aniListId: aniList?.id,
-    title: anime.title_english || aniList?.title.english || anime.title,
-    titleJapanese: anime.title_japanese || aniList?.title.native || '',
-    year,
-    overview: anime.synopsis || aniList?.description?.replace(/<[^>]+>/g, ' ') || '',
-    poster: poster || aniList?.coverImage.extraLarge || aniList?.coverImage.large || '',
-    banner: aniList?.bannerImage || '',
-    score: anime.score ?? (aniList?.averageScore ? aniList.averageScore / 10 : 0),
-    ageRating: anime.rating || 'Not rated',
-    genres: [...new Set([...anime.genres.map(({ name }) => name), ...anime.themes.map(({ name }) => name), ...(aniList?.genres ?? [])])],
-    episodes: anime.episodes ?? aniList?.episodes ?? 0,
-    status: anime.status || 'Unknown',
-    malUrl: anime.url,
-    aniListUrl: aniList ? `https://anilist.co/anime/${aniList.id}` : undefined,
+    aniListId: media.id,
+    title: media.title.english ?? media.title.romaji ?? media.title.native ?? '',
+    titleJapanese: media.title.native ?? media.title.romaji ?? '',
+    year: media.startDate?.year ?? 0,
+    overview: media.description?.replace(/<[^>]+>/g, ' ') || '',
+    poster,
+    banner: media.bannerImage ?? '',
+    score: media.averageScore ? media.averageScore / 10 : 0,
+    ageRating: media.isAdult ? 'R+' : 'Not rated',
+    genres: media.genres ?? [],
+    episodes: media.episodes ?? 0,
+    status: media.status ?? 'Unknown',
+    malUrl: malId ? `https://myanimelist.net/anime/${malId}` : '',
+    aniListUrl: `https://anilist.co/anime/${media.id}`,
   };
 }
+
+const ANIME_PAGE_QUERY = `
+  query ($page: Int, $perPage: Int, $genre: String, $sort: [MediaSort], $isAdult: Boolean, $startDate: FuzzyDateInt, $endDate: FuzzyDateInt) {
+    Page(page: $page, perPage: $perPage) {
+      pageInfo { total perPage currentPage lastPage hasNextPage }
+      media(type: ANIME, genre: $genre, sort: $sort, isAdult: $isAdult, startDate_greater: $startDate, endDate_lesser: $endDate) {
+        id
+        idMal
+        title { english romaji native }
+        description
+        genres
+        coverImage { large extraLarge }
+        bannerImage
+        averageScore
+        episodes
+        startDate { year }
+        status
+        isAdult
+        siteUrl
+      }
+    }
+  }
+`;
+
+const ANIME_MEDIA_QUERY = `
+  query ($idMal: Int) {
+    Media(idMal: $idMal, type: ANIME) {
+      id
+      idMal
+      title { english romaji native }
+      description
+      genres
+      coverImage { large extraLarge }
+      bannerImage
+      averageScore
+      episodes
+      startDate { year }
+      status
+      isAdult
+      siteUrl
+    }
+  }
+`;
+
+const ANIME_SEARCH_QUERY = `
+  query ($query: String, $perPage: Int) {
+    Page(perPage: $perPage) {
+      media(search: $query, type: ANIME, isAdult: false) {
+        id
+        idMal
+        title { english romaji native }
+        description
+        genres
+        coverImage { large extraLarge }
+        bannerImage
+        averageScore
+        episodes
+        startDate { year }
+        status
+        isAdult
+        siteUrl
+      }
+    }
+  }
+`;
 
 export async function discoverAnime(
   filters: AnimeSearchFilters,
   page: number,
   signal?: AbortSignal,
 ): Promise<AnimePageResult> {
-  const params = new URLSearchParams({
-    page: String(page),
-    limit: '24',
-    order_by: filters.sortBy === 'top_rated' ? 'score' : 'popularity',
-    sort: 'desc',
-    sfw: 'true',
-  });
-  if (filters.genreId) params.set('genres', String(filters.genreId));
-  if (filters.ageRating) params.set('rating', filters.ageRating);
-  if (filters.year) {
-    params.set('start_date', `${filters.year}-01-01`);
-    params.set('end_date', `${filters.year}-12-31`);
-  }
+  const perPage = 24;
+  const sort = filters.sortBy === 'top_rated' ? ['SCORE', 'POPULARITY'] : ['POPULARITY', 'SCORE'];
+  const year = filters.year;
+  const variables: Record<string, unknown> = {
+    page,
+    perPage,
+    genre: filters.genreId ?? undefined,
+    sort,
+    isAdult: false,
+    startDate: year ? `${year}0101` : undefined,
+    endDate: year ? `${year}1231` : undefined,
+  };
 
-  const response = await fetch(`${JIKAN_API_URL}/anime?${params}`, { signal });
-  if (!response.ok) {
-    throw new Error(`MyAnimeList catalog request failed (${response.status}). Please try again shortly.`);
-  }
-  const result = await response.json() as JikanResponse<JikanAnime[]>;
-  const safeAnime = result.data.filter((anime) => !isExplicitJikanAnime(anime));
-  const malIds = safeAnime.map(({ mal_id }) => mal_id);
+  const result = await anilistRequest(ANIME_PAGE_QUERY, variables, signal);
+  const pageInfo = result.data?.Page?.pageInfo;
+  const media = result.data?.Page?.media ?? [];
+  const safeAnime = media.filter((anime) => !isExplicitAnimeTitle({
+    ageRating: anime.isAdult ? 'R+' : 'Not rated',
+    genres: anime.genres,
+  }));
 
-  let aniListMatches = new Map<number, AniListMedia>();
-  const warnings: string[] = [];
-  try {
-    aniListMatches = await getAniListMatches(malIds);
-  } catch (error) {
-    if (signal?.aborted) throw error;
-    warnings.push(error instanceof Error ? error.message : 'AniList IDs could not be loaded.');
-  }
-
+  const malIds = safeAnime.map(({ idMal }) => idMal).filter((id): id is number => typeof id === 'number');
   let availability = new Map<number, boolean>();
+  const warnings: string[] = [];
   try {
     availability = await getAniPmAvailability(malIds, signal);
   } catch (error) {
@@ -242,13 +234,13 @@ export async function discoverAnime(
   }
 
   return {
-    items: safeAnime.map((anime) => ({
-      ...mapAnime(anime, aniListMatches.get(anime.mal_id)),
-      aniPmAvailable: availability.get(anime.mal_id),
-    })),
-    page,
-    totalPages: result.pagination?.last_visible_page ?? page,
-    hasMore: result.pagination?.has_next_page ?? false,
+    items: safeAnime.map((anime) => {
+      const item = mapAnime(anime);
+      return { ...item, aniPmAvailable: availability.get(item.malId) };
+    }),
+    page: pageInfo?.currentPage ?? page,
+    totalPages: pageInfo?.lastPage ?? page,
+    hasMore: pageInfo?.hasNextPage ?? false,
     aniListWarning: warnings.length ? warnings.join(' ') : null,
   };
 }
@@ -270,19 +262,16 @@ async function getAniPmAvailability(malIds: number[], signal?: AbortSignal): Pro
     .map((entry) => [Number(entry.query.mal), entry.available]));
 }
 
-async function getJapaneseAnimeDetails(malId: number): Promise<AnimeDetailsResult> {
-  const result = await jikanRequest<JikanAnime>(`/anime/${malId}/full`);
-  if (isExplicitJikanAnime(result.data)) {
+export async function getAnimeDetails(malId: number): Promise<AnimeDetailsResult> {
+  const result = await anilistRequest(ANIME_MEDIA_QUERY, { idMal: malId });
+  const media = result.data?.Media;
+  if (!media) {
+    throw new Error('Anime not found.');
+  }
+  if (media.isAdult) {
     throw new Error('Explicit hentai titles are not available in the anime section.');
   }
   const warnings: string[] = [];
-  let aniList: AniListMedia | undefined;
-  try {
-    const aniListMatches = await getAniListMatches([malId]);
-    aniList = aniListMatches.get(malId);
-  } catch (error) {
-    warnings.push(error instanceof Error ? error.message : 'AniList ID could not be loaded.');
-  }
   let availability: Map<number, boolean>;
   try {
     availability = await getAniPmAvailability([malId]);
@@ -291,45 +280,36 @@ async function getJapaneseAnimeDetails(malId: number): Promise<AnimeDetailsResul
     availability = new Map();
   }
   return {
-    item: { ...mapAnime(result.data, aniList), aniPmAvailable: availability.get(malId) },
+    item: { ...mapAnime(media), aniPmAvailable: availability.get(malId) },
     warning: warnings.length ? warnings.join(' ') : null,
   };
 }
 
 export async function searchAnime(query: string, signal?: AbortSignal): Promise<AnimeTitlesResult> {
-  const params = new URLSearchParams({ q: query, limit: '24', order_by: 'popularity', sort: 'desc', sfw: 'true' });
-  const response = await fetch(`${JIKAN_API_URL}/anime?${params}`, { signal });
-  if (!response.ok) {
-    throw new Error(`MyAnimeList search failed (${response.status}). Please try again shortly.`);
-  }
-  const result = await response.json() as JikanResponse<JikanAnime[]>;
-  const safeAnime = result.data.filter((anime) => !isExplicitJikanAnime(anime));
-  const warnings: string[] = [];
-  let aniListMatches = new Map<number, AniListMedia>();
-  try {
-    aniListMatches = await getAniListMatches(safeAnime.map(({ mal_id }) => mal_id), signal);
-  } catch (error) {
-    if (signal?.aborted) throw error;
-    warnings.push(error instanceof Error ? error.message : 'AniList IDs could not be loaded.');
-  }
+  const result = await anilistRequest(ANIME_SEARCH_QUERY, { query, perPage: 24 }, signal);
+  const media = result.data?.Page?.media ?? [];
+  const safeAnime = media.filter((anime) => !isExplicitAnimeTitle({
+    ageRating: anime.isAdult ? 'R+' : 'Not rated',
+    genres: anime.genres,
+  }));
+
+  const malIds = safeAnime.map(({ idMal }) => idMal).filter((id): id is number => typeof id === 'number');
   let availability = new Map<number, boolean>();
+  const warnings: string[] = [];
   try {
-    availability = await getAniPmAvailability(safeAnime.map(({ mal_id }) => mal_id), signal);
+    availability = await getAniPmAvailability(malIds, signal);
   } catch (error) {
     if (signal?.aborted) throw error;
     warnings.push(error instanceof Error ? error.message : 'Ani.pm availability could not be checked.');
   }
+
   return {
-    items: safeAnime.map((anime) => ({
-      ...mapAnime(anime, aniListMatches.get(anime.mal_id)),
-      aniPmAvailable: availability.get(anime.mal_id),
-    })),
+    items: safeAnime.map((anime) => {
+      const item = mapAnime(anime);
+      return { ...item, aniPmAvailable: availability.get(item.malId) };
+    }),
     warning: warnings.length ? warnings.join(' ') : null,
   };
-}
-
-export async function getAnimeDetails(malId: number): Promise<AnimeDetailsResult> {
-  return getJapaneseAnimeDetails(malId);
 }
 
 export function getAniPmEmbedUrl(item: AnimeTitle, episode: number, language: 'sub' | 'dub') {

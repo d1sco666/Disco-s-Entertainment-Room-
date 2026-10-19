@@ -11,7 +11,7 @@ export function AnimeBrowser() {
   const [year, setYear] = useState('');
   const [providerId, setProviderId] = useState('');
   const filters = useMemo(() => ({
-    genreId: genreId ? Number(genreId) : null,
+    genreId: genreId || null,
     ageRating,
     sortBy,
     year: year ? Number(year) : null,
