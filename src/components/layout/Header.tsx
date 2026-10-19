@@ -4,14 +4,6 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { classNames } from '@/utils/helpers';
 import { simklAPI } from '@/services/simkl';
-import { useAuth0 } from '@auth0/auth0-react';
-import {
-  isAuth0LoginConfirmed,
-  setAuth0LoginPending,
-  setAuth0LoginConfirmed,
-  subscribeToAuth0LoginState,
-  useAuth0RedirectUser,
-} from '@/components/auth/Auth0ProviderWithNavigate';
 
 export function Header() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -113,7 +105,6 @@ export function Header() {
                 Sign in with Simkl
               </Button>
             )}
-            <Auth0Controls />
             <Button
               variant="ghost"
               size="icon"
@@ -187,7 +178,6 @@ export function Header() {
                   Sign in with Simkl
                 </button>
               )}
-              <Auth0Controls mobile />
             </nav>
           </div>
         )}
@@ -196,95 +186,5 @@ export function Header() {
         )}
       </nav>
     </header>
-  );
-}
-
-function Auth0Controls({ mobile = false }: { mobile?: boolean }) {
-  const configured = Boolean(import.meta.env.VITE_AUTH0_DOMAIN && import.meta.env.VITE_AUTH0_CLIENT_ID);
-  if (!configured) return <Auth0SetupButton mobile={mobile} />;
-  return <ConfiguredAuth0Controls mobile={mobile} />;
-}
-
-function Auth0SetupButton({ mobile }: { mobile: boolean }) {
-  const [showSetupMessage, setShowSetupMessage] = useState(false);
-
-  return (
-    <div className={mobile ? 'px-3 py-2' : 'relative'}>
-      <Button
-        size="sm"
-        className={mobile ? 'w-full justify-start' : 'hidden sm:inline-flex'}
-        onClick={() => setShowSetupMessage(true)}
-      >
-        Log in
-      </Button>
-      {showSetupMessage && (
-        <p className="mt-1 text-xs text-amber-300" role="alert">
-          Add VITE_AUTH0_DOMAIN and VITE_AUTH0_CLIENT_ID to .env.local to enable login.
-        </p>
-      )}
-    </div>
-  );
-}
-
-function ConfiguredAuth0Controls({ mobile }: { mobile: boolean }) {
-  const { isAuthenticated, isLoading, user, loginWithRedirect, logout } = useAuth0();
-  const redirectUser = useAuth0RedirectUser();
-  const [callbackConfirmed, setCallbackConfirmed] = useState(isAuth0LoginConfirmed);
-  const loggedIn = isAuthenticated || Boolean(user) || Boolean(redirectUser) || callbackConfirmed;
-  const [authError, setAuthError] = useState<string | null>(null);
-  const location = useLocation();
-
-  useEffect(() => {
-    const unsubscribe = subscribeToAuth0LoginState(() => setCallbackConfirmed(isAuth0LoginConfirmed()));
-    setCallbackConfirmed(isAuth0LoginConfirmed());
-    return unsubscribe;
-  }, []);
-
-  const handleAuthAction = async () => {
-    setAuthError(null);
-    try {
-      if (loggedIn) {
-        setAuth0LoginConfirmed(false);
-        await logout({ logoutParams: { returnTo: window.location.origin } });
-      } else {
-        setAuth0LoginPending();
-        await loginWithRedirect({
-          appState: { returnTo: `${location.pathname}${location.search}` },
-        });
-      }
-    } catch (error) {
-      setAuth0LoginConfirmed(false);
-      setAuthError(error instanceof Error ? error.message : 'Could not complete Auth0 sign-in.');
-    }
-  };
-
-  return (
-    <>
-      <Button
-        size="sm"
-        variant={loggedIn ? 'outline' : 'primary'}
-        className={classNames(
-          mobile ? 'w-full justify-start' : 'hidden sm:inline-flex',
-          loggedIn && 'border-emerald-500 text-emerald-400'
-        )}
-        onClick={handleAuthAction}
-        disabled={isLoading}
-        aria-label={loggedIn ? 'Log out of your account' : 'Log in with Auth0'}
-        title={loggedIn && (user?.name || redirectUser?.name)
-          ? `Logged in as ${user?.name || redirectUser?.name}. Click to log out.`
-          : undefined}
-      >
-        {isLoading
-          ? 'Checking login…'
-          : loggedIn
-            ? 'Logged in'
-            : 'Log in'}
-      </Button>
-      {authError && (
-        <p className="text-xs text-red-400" role="alert">
-          {authError}
-        </p>
-      )}
-    </>
   );
 }
