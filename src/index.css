@@ -1,0 +1,249 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-primary-50: #f0f9ff;
+  --color-primary-100: #e0f2fe;
+  --color-primary-200: #bae6fd;
+  --color-primary-300: #7dd3fc;
+  --color-primary-400: #38bdf8;
+  --color-primary-500: #0ea5e9;
+  --color-primary-600: #0284c7;
+  --color-primary-700: #0369a1;
+  --color-primary-800: #075985;
+  --color-primary-900: #0c4a6e;
+  --color-dark-50: #f8fafc;
+  --color-dark-100: #f1f5f9;
+  --color-dark-200: #e2e8f0;
+  --color-dark-300: #cbd5e1;
+  --color-dark-400: #94a3b8;
+  --color-dark-500: #64748b;
+  --color-dark-600: #475569;
+  --color-dark-700: #334155;
+  --color-dark-800: #1e293b;
+  --color-dark-900: #0f172a;
+  --color-dark-950: #020617;
+  --color-app-background: #525257;
+  --font-sans: Inter, system-ui, sans-serif;
+}
+
+@layer base {
+  :root {
+    --color-primary: 14 165 233;
+    color-scheme: dark;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    scrollbar-gutter: stable;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  body {
+    @apply bg-app-background text-dark-100 antialiased;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  * {
+    @apply border-dark-800;
+  }
+
+  ::selection {
+    @apply bg-primary-500/30 text-primary-900 dark:text-primary-100;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary-500 ring-offset-2 ring-offset-white dark:ring-offset-dark-950;
+  }
+}
+
+@layer components {
+  .poster-card-gloss {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    background:
+      linear-gradient(145deg, rgb(255 255 255 / 0.12), transparent 42%),
+      linear-gradient(145deg, rgb(70 80 95 / 0.92), rgb(37 44 54 / 0.86));
+    -webkit-backdrop-filter: blur(12px) saturate(135%);
+    backdrop-filter: blur(12px) saturate(135%);
+    box-shadow:
+      inset 0 1px 0 rgb(255 255 255 / 0.24),
+      inset 0 -1px 0 rgb(255 255 255 / 0.06);
+    border-top: 1px solid rgb(255 255 255 / 0.2);
+  }
+
+  .poster-card-gloss::before {
+    position: absolute;
+    inset: 0 0 auto;
+    height: 80%;
+    background:
+      linear-gradient(115deg, rgb(255 255 255 / 0.18), transparent 48%),
+      linear-gradient(180deg, rgb(255 255 255 / 0.06), transparent);
+    content: '';
+    pointer-events: none;
+  }
+
+  .poster-card-gloss > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .deferred-home-section {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 24rem;
+  }
+
+  .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Video player specific styles */
+video::-webkit-media-controls {
+  display: none !important;
+}
+
+video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+
+video::-webkit-media-controls-panel {
+  display: none !important;
+}
+
+video::-webkit-media-controls-play-button {
+  display: none !important;
+}
+
+video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+}
+
+/* Range input styling */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  background: rgb(100 116 139);
+  border-radius: 3px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgb(14 165 233);
+  margin-top: -5px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.25);
+  box-shadow: 0 0 0 4px rgb(14 165 233 / 0.2);
+}
+
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  background: rgb(100 116 139);
+  border-radius: 3px;
+  border: none;
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgb(14 165 233);
+  border: none;
+  transition: transform 0.15s ease;
+}
+
+input[type="range"]::-moz-range-thumb:hover {
+  transform: scale(1.25);
+}
+
+input[type="range"]:focus-visible {
+  outline: none;
+}
+
+input[type="range"]:focus-visible::-webkit-slider-thumb {
+  box-shadow: 0 0 0 4px rgb(14 165 233 / 0.4);
+}
+
+input[type="range"]:focus-visible::-moz-range-thumb {
+  box-shadow: 0 0 0 4px rgb(14 165 233 / 0.4);
+}
+
+/* Volume slider vertical */
+input[type="range"][orient="vertical"] {
+  writing-mode: bt-lr;
+  -webkit-appearance: slider-vertical;
+  height: 100px;
+  width: 6px;
+}
+
+/* Custom scrollbar for webkit */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgb(15 23 42);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgb(51 65 85);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(71 85 105);
+}
+
+::-webkit-scrollbar-corner {
+  background: rgb(15 23 42);
+}
+
+/* Modal backdrop blur */
+.backdrop-blur-sm {
+  backdrop-filter: blur(4px);
+}
