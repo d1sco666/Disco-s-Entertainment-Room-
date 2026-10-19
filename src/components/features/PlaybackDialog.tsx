@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
 import { VideoPlayer } from './VideoPlayer';
+import type { DubLanguage } from '../../utils/additionalPlayers';
 
 interface PlaybackProvider {
-  id: 'vimeus' | 'cinesrc';
+  id: 'vimeus' | 'cinesrc' | 'vidstuck' | 'zxcstream';
   name: string;
-  getSrc: () => string | Promise<string>;
+  getSrc: (dubLanguage?: DubLanguage) => string | Promise<string>;
+  languageOptions?: { value: DubLanguage; label: string }[];
   unavailableReason?: string;
 }
 
@@ -18,12 +20,14 @@ interface PlaybackDialogProps {
 
 export function PlaybackDialog({ isOpen, itemKey, title, providers, onClose }: PlaybackDialogProps) {
   const [selectedProvider, setSelectedProvider] = useState<PlaybackProvider | null>(null);
+  const [languageProvider, setLanguageProvider] = useState<PlaybackProvider | null>(null);
   const [playerUrl, setPlayerUrl] = useState<string | null>(null);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     setSelectedProvider(null);
+    setLanguageProvider(null);
     setPlayerUrl(null);
     setLoadingProvider(null);
     setLoadError(null);
@@ -42,13 +46,14 @@ export function PlaybackDialog({ isOpen, itemKey, title, providers, onClose }: P
 
   if (!isOpen) return null;
 
-  const chooseProvider = async (provider: PlaybackProvider) => {
+  const loadProvider = async (provider: PlaybackProvider, dubLanguage?: DubLanguage) => {
     setSelectedProvider(provider);
+    setLanguageProvider(null);
     setLoadingProvider(provider.id);
     setLoadError(null);
 
     try {
-      setPlayerUrl(await provider.getSrc());
+      setPlayerUrl(await provider.getSrc(dubLanguage));
     } catch (error) {
       setSelectedProvider(null);
       setLoadError(error instanceof Error ? error.message : `${provider.name} could not load this title.`);
@@ -57,12 +62,21 @@ export function PlaybackDialog({ isOpen, itemKey, title, providers, onClose }: P
     }
   };
 
+  const chooseProvider = (provider: PlaybackProvider) => {
+    setLoadError(null);
+    if (provider.languageOptions) {
+      setLanguageProvider(provider);
+      return;
+    }
+    void loadProvider(provider);
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={playerUrl ? 'Video Player' : loadingProvider ? 'Loading video player' : 'Choose a video provider'}
+      aria-label={playerUrl ? 'Video Player' : loadingProvider ? 'Loading video player' : languageProvider ? 'Choose audio language' : 'Choose a video provider'}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -86,7 +100,11 @@ export function PlaybackDialog({ isOpen, itemKey, title, providers, onClose }: P
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
               <h2 className="text-xl font-semibold text-white">
-                {loadingProvider ? `Loading ${selectedProvider?.name}...` : 'Choose a player'}
+                {loadingProvider
+                  ? `Loading ${selectedProvider?.name}...`
+                  : languageProvider
+                    ? `Choose ${languageProvider.name} audio language`
+                    : 'Choose a player'}
               </h2>
               <p className="mt-1 text-sm text-dark-300">{title}</p>
             </div>
@@ -106,24 +124,47 @@ export function PlaybackDialog({ isOpen, itemKey, title, providers, onClose }: P
               {loadError}
             </p>
           )}
-          <div className="space-y-3">
-            {providers.map((provider) => (
+          {languageProvider ? (
+            <div className="space-y-3">
+              {languageProvider.languageOptions?.map((language) => (
+                <button
+                  key={language.value}
+                  type="button"
+                  disabled={Boolean(loadingProvider)}
+                  onClick={() => void loadProvider(languageProvider, language.value)}
+                  className="w-full rounded-lg border border-dark-700 bg-dark-800 px-4 py-3 text-left font-medium text-white transition-colors enabled:hover:border-primary-500 enabled:hover:bg-dark-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {language.label}
+                </button>
+              ))}
               <button
-                key={provider.id}
                 type="button"
-                disabled={Boolean(loadingProvider) || Boolean(provider.unavailableReason)}
-                onClick={() => void chooseProvider(provider)}
-                className="w-full rounded-lg border border-dark-700 bg-dark-800 px-4 py-3 text-left font-medium text-white transition-colors enabled:hover:border-primary-500 enabled:hover:bg-dark-700 disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={() => setLanguageProvider(null)}
+                className="w-full rounded-lg px-4 py-2 text-sm text-dark-300 transition-colors hover:bg-dark-800 hover:text-white"
               >
-                {provider.name}
-                {provider.unavailableReason && (
-                  <span className="mt-1 block text-sm font-normal text-dark-300">
-                    {provider.unavailableReason}
-                  </span>
-                )}
+                Back to players
               </button>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {providers.map((provider) => (
+                <button
+                  key={provider.id}
+                  type="button"
+                  disabled={Boolean(loadingProvider) || Boolean(provider.unavailableReason)}
+                  onClick={() => chooseProvider(provider)}
+                  className="w-full rounded-lg border border-dark-700 bg-dark-800 px-4 py-3 text-left font-medium text-white transition-colors enabled:hover:border-primary-500 enabled:hover:bg-dark-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {provider.name}
+                  {provider.unavailableReason && (
+                    <span className="mt-1 block text-sm font-normal text-dark-300">
+                      {provider.unavailableReason}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
           {loadingProvider && (
             <p className="mt-3 text-sm text-dark-300" role="status">
               Looking up the selected provider...

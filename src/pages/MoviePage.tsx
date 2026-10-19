@@ -10,6 +10,7 @@ import { useMediaTrailer, useMovieDetails } from '../hooks/useMedia';
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { formatYear, formatRuntime, formatDate } from '../utils/helpers';
 import { getVimeusMovieEmbedUrl } from '../utils/vimeus';
+import { getVidstuckMovieEmbedUrl, getZxcstreamMoviePlayerUrl } from '../utils/additionalPlayers';
 
 export function MoviePage() {
   const { id } = useParams<{ id: string }>();
@@ -74,6 +75,25 @@ export function MoviePage() {
               return cinesrcEmbedUrl;
             },
             unavailableReason: !cinesrcEmbedUrl ? 'A TMDB ID is required' : undefined,
+          },
+          {
+            id: 'vidstuck',
+            name: 'Vidstuck',
+            getSrc: () => getVidstuckMovieEmbedUrl(movie.tmdbId),
+            unavailableReason: !movie.tmdbId ? 'A TMDB ID is required' : undefined,
+          },
+          {
+            id: 'zxcstream',
+            name: 'Zxcstream',
+            getSrc: (dubLanguage) => {
+              if (!dubLanguage) throw new Error('Choose an audio language to open this movie in Zxcstream.');
+              return getZxcstreamMoviePlayerUrl(movie.tmdbId, dubLanguage);
+            },
+            languageOptions: [
+              { value: 'en', label: 'English' },
+              { value: 'es', label: 'Español' },
+            ],
+            unavailableReason: !movie.tmdbId ? 'A TMDB ID is required' : undefined,
           },
         ]}
         onClose={() => setShowPlayer(false)}

@@ -1,11 +1,11 @@
 # Entertainment Room
 
-A personal movie and TV discovery website using **TMDB** for title metadata, a choice of **Vimeus** or **CineSrc** embedded players, and **Simkl** for optional watchlist and watched-history sync.
+A personal movie and TV discovery website using **TMDB** for title metadata, a choice of **Vimeus**, **CineSrc**, **Vidstuck**, or **Zxcstream** players, and **Simkl** for optional watchlist and watched-history sync.
 
 ## Features
 
 - 🎬 **Movie & TV Discovery** - Popular, trending, search, posters, ratings, and certifications from TMDB
-- 🎥 **Player Choice** - Choose between Vimeus and CineSrc for movies and TV episodes
+- 🎥 **Player Choice** - Choose between Vimeus, CineSrc, Vidstuck, and Zxcstream for movies and TV episodes
 - 🔍 **Search Functionality** - Find content instantly
 - 📱 **Responsive Design** - Works on all devices
 - 🌙 **Dark Mode** - Easy on the eyes
@@ -17,7 +17,7 @@ A personal movie and TV discovery website using **TMDB** for title metadata, a c
 - **Styling**: Tailwind CSS v4
 - **State Management**: React hooks
 - **Routing**: React Router v7
-- **Video Player**: Vimeus and CineSrc embed players
+- **Video Player**: Vimeus, CineSrc, Vidstuck, and Zxcstream players
 - **Metadata API**: TMDB
 - **Library Sync**: Simkl OAuth 2.0 (PKCE)
 - **Authentication**: Auth0 SPA SDK
@@ -100,12 +100,14 @@ src/
 
 ## Features in Detail
 
-### Video Player (Vimeus and CineSrc)
-- Choose Vimeus or CineSrc from the provider picker when starting a movie or episode.
-- Both providers use the title's TMDB ID. Vimeus URLs follow its documented embed format and include the configured `view_key`.
+### Video Player (Vimeus, CineSrc, Vidstuck, and Zxcstream)
+- Choose a provider from the picker when starting a movie or episode.
+- The providers use the title's TMDB ID. Vimeus URLs follow its documented embed format and include the configured `view_key`.
 - Movie embed: `https://vimeus.com/e/movie?tmdb={tmdb_id}&view_key={view_key}`
 - TV episode embed: `https://vimeus.com/e/serie?tmdb={tmdb_id}&se={season}&ep={episode}&view_key={view_key}`
 - See the [Vimeus API documentation](https://vimeus.com/) for supported embed URLs and options.
+- Vidstuck embeds use `https://vidstuck.cc/embed/movie/{tmdb_id}` for movies and `https://vidstuck.cc/embed/tv/{tmdb_id}/{season}/{episode}` for TV episodes. See the [Vidstuck documentation](https://vidstuck.cc/documentation).
+- Zxcstream opens movies at `https://zxcstream.cc/player/movie/{tmdb_id}` and episodes at `https://zxcstream.cc/player/tv/{tmdb_id}/{season}/{episode}`. Choose English (`dubLang=en`) or Spanish (`dubLang=es`) when selecting Zxcstream.
 
 ### Content Browsing
 - Trending movies & TV shows
@@ -120,8 +122,8 @@ src/
 - **TV Shows** - Popular & Trending tabs
 - **Trending** - Combined trending view
 - **Search** - Debounced search results
-- **Movie Detail** - Info and provider picker for Vimeus or CineSrc playback
-- **TV Show Detail** - Season/episode selector and provider picker for Vimeus or CineSrc playback
+- **Movie Detail** - Info and provider picker for embedded playback
+- **TV Show Detail** - Season/episode selector and provider picker for embedded playback
 - **Watchlist** - Local collection with optional Simkl synchronization
 - **Watched** - Explicitly marked movies and episodes, optionally synced with Simkl
 

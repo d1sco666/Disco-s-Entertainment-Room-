@@ -9,6 +9,7 @@ import { useMediaTrailer, useTVShowDetails, useSeasonDetails } from '../hooks/us
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { formatYear, formatDate, formatRuntime } from '../utils/helpers';
 import { getVimeusEpisodeEmbedUrl } from '../utils/vimeus';
+import { getVidstuckEpisodeEmbedUrl, getZxcstreamEpisodePlayerUrl } from '../utils/additionalPlayers';
 import { useState } from 'react';
 import type { CineSrcEpisode } from '../types';
 
@@ -99,6 +100,30 @@ export function TVShowPage() {
                 return cinesrcEmbedUrl;
               },
               unavailableReason: !cinesrcEmbedUrl ? 'A TMDB ID is required' : undefined,
+            },
+            {
+              id: 'vidstuck',
+              name: 'Vidstuck',
+              getSrc: () => getVidstuckEpisodeEmbedUrl(show.tmdbId, selectedSeason, selectedEpisode.episodeNumber),
+              unavailableReason: !show.tmdbId ? 'A TMDB ID is required' : undefined,
+            },
+            {
+              id: 'zxcstream',
+              name: 'Zxcstream',
+              getSrc: (dubLanguage) => {
+                if (!dubLanguage) throw new Error('Choose an audio language to open this episode in Zxcstream.');
+                return getZxcstreamEpisodePlayerUrl(
+                  show.tmdbId,
+                  selectedSeason,
+                  selectedEpisode.episodeNumber,
+                  dubLanguage
+                );
+              },
+              languageOptions: [
+                { value: 'en', label: 'English' },
+                { value: 'es', label: 'Español' },
+              ],
+              unavailableReason: !show.tmdbId ? 'A TMDB ID is required' : undefined,
             },
           ]}
           onClose={() => setShowPlayer(false)}
