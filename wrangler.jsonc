@@ -2,6 +2,9 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "entertainment-room",
   "compatibility_date": "2026-10-19",
+  "build": {
+    "command": "npm ci && npm run build"
+  },
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"

@@ -142,7 +142,7 @@ This repository is configured to deploy the Vite single-page app as Cloudflare W
 In Cloudflare, connect the repository as a **Workers Builds** project and use:
 
 - Root directory: `/`
-- Build command: `npm ci && npm run build`
+- Build command: `None` (Wrangler runs `npm ci && npm run build` from `wrangler.jsonc`)
 - Deploy command: `npx wrangler deploy`
 - Build variables:
   - `VITE_TMDB_API_KEY` — required for TMDB catalog data.
@@ -150,7 +150,7 @@ In Cloudflare, connect the repository as a **Workers Builds** project and use:
   - `VITE_AUTH0_DOMAIN`, `VITE_AUTH0_CLIENT_ID`, and optionally `VITE_AUTH0_AUDIENCE` if using Auth0.
   - `VITE_SIMKL_CLIENT_ID` if using Simkl.
 
-Set variables in the Cloudflare build environment for each deployment environment that needs them. `VITE_` values are embedded in the public client bundle; only use public client-side keys and never put a Cloudflare deploy/build token in Vite variables or source control. With no `VITE_TMDB_API_KEY`, the app can build but TMDB-backed pages will not load data. Save the settings and redeploy from a commit that contains the project files and Wrangler config; Cloudflare cannot use unpushed local changes.
+Set variables in the Cloudflare build environment for each deployment environment that needs them. `VITE_` values are embedded in the public client bundle; only use public client-side keys and never put a Cloudflare deploy/build token in Vite variables or source control. With no `VITE_TMDB_API_KEY`, the app can build but TMDB-backed pages will not load data. Wrangler's configured build step installs dependencies and creates `dist/` before deployment, even when the Cloudflare Build command is `None`. Cloudflare must deploy a commit containing the project files and Wrangler config; it cannot use unpushed local changes.
 
 To deploy locally, install dependencies, provide the required Vite variables in a local environment file, then run:
 
