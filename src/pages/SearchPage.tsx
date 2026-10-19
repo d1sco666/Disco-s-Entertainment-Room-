@@ -5,13 +5,16 @@ import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { useSearch } from '../hooks/useMedia';
 import { classNames } from '../utils/helpers';
+import { useAnimeSearch } from '../hooks/useAnime';
+import { AnimeCard } from '../components/features/AnimeCard';
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
-  const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'tv'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'tv' | 'anime'>('all');
 
   const { results, loading, error } = useSearch(query, !!query);
+  const animeResults = useAnimeSearch(query, !!query && activeTab === 'anime');
 
   useEffect(() => {
     const q = searchParams.get('q') || '';
@@ -99,10 +102,23 @@ export function SearchPage() {
           >
             TV Shows ({tvShows.length})
           </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'anime'}
+            onClick={() => setActiveTab('anime')}
+            className={classNames(
+              'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
+              activeTab === 'anime'
+                ? 'bg-primary-600 text-white'
+                : 'bg-dark-100 dark:bg-dark-800 text-dark-700 dark:text-dark-300 hover:bg-dark-200 dark:hover:bg-dark-700'
+            )}
+          >
+            Anime
+          </button>
         </div>
       )}
 
-      {query && (
+      {query && activeTab !== 'anime' && (
         <MediaGrid
           items={currentItems}
           type={currentType}
@@ -111,6 +127,28 @@ export function SearchPage() {
           emptyMessage={error ? `Error: ${error}` : `No results found for "${query}"`}
         />
       )}
+      {query && activeTab === 'anime' && (
+        <section aria-label="Anime search results">
+          {animeResults.warning && (
+            <p className="mb-4 text-sm text-amber-200" role="status">
+              Some AniList or Ani.pm metadata could not be loaded. {animeResults.warning}
+            </p>
+          )}
+          {animeResults.loading ? (
+            <p className="py-10 text-center text-dark-400" role="status">Searching anime…</p>
+          ) : animeResults.error ? (
+            <p className="rounded-lg border border-red-900/50 bg-red-950/20 p-4 text-sm text-red-300" role="alert">
+              {animeResults.error}
+            </p>
+          ) : animeResults.items.length === 0 ? (
+            <p className="py-10 text-center text-dark-400">No anime found for “{query}”.</p>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
+              {animeResults.items.map((item) => <AnimeCard key={item.malId} item={item} />)}
+            </div>
+          )}
+        </section>
+      )}
 
       {!query && (
         <div className="text-center py-16">
@@ -118,7 +156,7 @@ export function SearchPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <h2 className="text-xl font-semibold text-dark-900 dark:text-white mb-2">Search for content</h2>
-          <p className="text-dark-500 dark:text-dark-400">Enter a movie or TV show title above to start searching</p>
+          <p className="text-dark-500 dark:text-dark-400">Enter a movie, TV show, or anime title above to start searching</p>
         </div>
       )}
     </div>

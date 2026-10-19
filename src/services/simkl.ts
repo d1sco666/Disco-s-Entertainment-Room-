@@ -1,4 +1,10 @@
-import type { SavedMedia, WatchedItem } from '../types';
+import type {
+  AnimeSimklLibrary,
+  AnimeTitle,
+  AnimeWatchHistoryItem,
+  SavedMedia,
+  WatchedItem,
+} from '../types';
 
 const API_URL = 'https://api.simkl.com';
 const CLIENT_ID = import.meta.env.VITE_SIMKL_CLIENT_ID || '5b98b5163aa1a1606f1ddf4cfe476affe3fb20150ac05f38a229325723f72241';
@@ -7,6 +13,7 @@ const APP_VERSION = '1.0.0';
 const AUTH_KEY = 'entertainment-room-simkl-auth';
 const PENDING_AUTH_KEY = 'entertainment-room-simkl-pending';
 const SNAPSHOT_KEY = 'entertainment-room-simkl-snapshot';
+const ANIME_SNAPSHOT_KEY = 'entertainment-room-simkl-anime-snapshot';
 let lastWriteAt = 0;
 let writeQueue = Promise.resolve();
 
@@ -43,6 +50,7 @@ interface PendingAuth {
 interface SimklItem {
   movie?: SimklTitle;
   show?: SimklTitle;
+  anime?: SimklTitle;
   status?: string;
   last_watched_at?: string | null;
   watched_at?: string | null;
@@ -65,6 +73,8 @@ interface SimklTitle {
     simkl?: number | string;
     imdb?: string;
     slug?: string;
+    mal?: number | string;
+    anilist?: number | string;
   };
 }
 
@@ -85,6 +95,24 @@ interface SyncResult {
   imported: number;
   removedLocally: number;
   skipped: number;
+}
+
+interface AnimeSyncSnapshot {
+  watchlist: { local: string[]; remote: string[] };
+  watched: { local: string[]; remote: string[] };
+}
+
+interface AnimeSyncResult extends AnimeSimklLibrary {
+  addedToSimkl: number;
+  imported: number;
+  removedLocally: number;
+  removedFromSimkl: number;
+  skipped: number;
+}
+
+interface SimklAnimeEntry {
+  title: SimklTitle;
+  watchedAt?: string;
 }
 
 function getRedirectUri() {
@@ -206,6 +234,14 @@ function idKey(media: SavedMedia) {
   return `${media.type}:${media.item.id}`;
 }
 
+function animeIdKey(item: AnimeTitle) {
+  return `anime:${item.malId}`;
+}
+
+function animeWatchedKey(item: AnimeWatchHistoryItem) {
+  return `${animeIdKey(item.item)}:complete`;
+}
+
 function watchedKey(media: WatchedItem) {
   return `${idKey(media)}:${media.episode ? `${media.episode.seasonNumber}.${media.episode.episodeNumber}` : 'complete'}`;
 }
@@ -222,6 +258,32 @@ function unwrapItems(response: { movies?: SimklItem[]; shows?: SimklItem[] }, ty
 
 function tmdbId(title: SimklTitle) {
   return title.ids.tmdb === undefined ? '' : String(title.ids.tmdb);
+}
+
+function malId(title: SimklTitle) {
+  const id = title.ids.mal;
+  return id === undefined ? '' : String(id);
+}
+
+function makeAnimeIds(item: AnimeTitle) {
+  return {
+    mal: item.malId,
+    ...(item.aniListId ? { anilist: item.aniListId } : {}),
+  };
+}
+
+function animeTitle(entry: SimklItem) {
+  return entry.anime;
+}
+
+function mapRemoteWatchedAnime(response: { anime?: SimklItem[] }): SimklAnimeEntry[] {
+  return (response.anime ?? [])
+    .filter((entry) => Boolean(entry.anime) && Boolean(malId(entry.anime!)))
+    .filter((entry) => entry.status === 'completed' || entry.last_watched_at || entry.watched_at)
+    .map((entry) => ({
+      title: entry.anime!,
+      watchedAt: entry.last_watched_at ?? entry.watched_at ?? undefined,
+    }));
 }
 
 function simklHref(type: SavedMedia['type'], title: SimklTitle) {
@@ -299,6 +361,26 @@ function readSnapshot(): SimklSnapshot | null {
   } catch {
     return null;
   }
+}
+
+function readAnimeSnapshot(): AnimeSyncSnapshot | null {
+  try {
+    const stored = localStorage.getItem(ANIME_SNAPSHOT_KEY);
+    if (!stored) return null;
+    const snapshot = JSON.parse(stored) as AnimeSyncSnapshot;
+    if (
+      !snapshot.watchlist?.local || !snapshot.watchlist?.remote
+      || !snapshot.watched?.local || !snapshot.watched?.remote
+    ) return null;
+    return snapshot;
+  } catch {
+    return null;
+  }
+}
+
+async function loadAnimeDetails(id: string): Promise<AnimeTitle> {
+  const { getAnimeDetails } = await import('./anime');
+  return (await getAnimeDetails(Number(id))).item;
 }
 
 function diffRemoved(previous: string[], current: string[]) {
@@ -416,6 +498,132 @@ export const simklAPI = {
 
   disconnect() {
     disconnectSimkl();
+  },
+
+  async syncAnimeLibrary(localWatchlist: AnimeTitle[], localWatched: AnimeWatchHistoryItem[]): Promise<AnimeSyncResult> {
+    const remoteWatchlistResponse = await simklRequest<{ anime?: SimklItem[] }>('/sync/all-items/anime/plantowatch');
+    const remoteWatchedResponse = await simklRequest<{ anime?: SimklItem[] }>('/sync/all-items/anime/completed?extended=full');
+    const remoteWatchlist = (remoteWatchlistResponse.anime ?? [])
+      .filter((entry) => Boolean(animeTitle(entry)) && Boolean(malId(animeTitle(entry)!)));
+    const remoteWatched = mapRemoteWatchedAnime(remoteWatchedResponse);
+    const localWatchlistKeys = localWatchlist.map(animeIdKey);
+    const localWatchedKeys = localWatched.map(animeWatchedKey);
+    const remoteWatchlistKeys = remoteWatchlist.map((entry) => `anime:${malId(animeTitle(entry)!)}`);
+    const remoteWatchedKeys = remoteWatched.map((entry) => `anime:${malId(entry.title)}:complete`);
+    const remoteWatchlistSet = new Set(remoteWatchlistKeys);
+    const remoteWatchedSet = new Set(remoteWatchedKeys);
+    const snapshot = readAnimeSnapshot();
+    let nextWatchlist = [...localWatchlist];
+    let nextWatched = [...localWatched];
+    let addedToSimkl = 0;
+    let imported = 0;
+    let removedLocally = 0;
+    let removedFromSimkl = 0;
+    let skipped = 0;
+
+    if (snapshot) {
+      const locallyRemovedWatchlist = new Set(diffRemoved(snapshot.watchlist.local, localWatchlistKeys));
+      const remotelyRemovedWatchlist = new Set(diffRemoved(snapshot.watchlist.remote, remoteWatchlistKeys));
+      for (const key of locallyRemovedWatchlist) {
+        const mal = Number(key.slice('anime:'.length));
+        if (!Number.isSafeInteger(mal) || mal < 1 || !remoteWatchlistSet.has(key)) continue;
+        await simklRequest('/sync/history/remove', 'POST', { anime: [{ ids: { mal } }] });
+        remoteWatchlistSet.delete(key);
+        remoteWatchedSet.delete(`${key}:complete`);
+        removedFromSimkl += 1;
+      }
+      nextWatchlist = nextWatchlist.filter((item) => !remotelyRemovedWatchlist.has(animeIdKey(item)));
+      removedLocally += localWatchlist.length - nextWatchlist.length;
+      nextWatched = nextWatched.filter((entry) => (
+        !locallyRemovedWatchlist.has(animeIdKey(entry.item))
+        && !remotelyRemovedWatchlist.has(animeIdKey(entry.item))
+      ));
+
+      const locallyRemovedWatched = new Set(diffRemoved(snapshot.watched.local, localWatchedKeys));
+      const remotelyRemovedWatched = new Set(diffRemoved(snapshot.watched.remote, remoteWatchedKeys));
+      for (const key of locallyRemovedWatched) {
+        const mal = Number(key.slice('anime:'.length).replace(/:complete$/, ''));
+        if (!Number.isSafeInteger(mal) || mal < 1 || !remoteWatchedSet.has(key)) continue;
+        await simklRequest('/sync/history/remove', 'POST', { anime: [{ ids: { mal } }] });
+        remoteWatchedSet.delete(key);
+        removedFromSimkl += 1;
+      }
+      nextWatched = nextWatched.filter((entry) => (
+        !remotelyRemovedWatched.has(animeWatchedKey(entry))
+        && !locallyRemovedWatchlist.has(animeIdKey(entry.item))
+        && !remotelyRemovedWatchlist.has(animeIdKey(entry.item))
+        && !locallyRemovedWatched.has(animeWatchedKey(entry))
+      ));
+      removedLocally += localWatched.length - nextWatched.length;
+    }
+
+    const nextWatchlistKeys = new Set(nextWatchlist.map(animeIdKey));
+    const addWatchlist = nextWatchlist.filter((item) => !remoteWatchlistSet.has(animeIdKey(item)));
+    if (addWatchlist.length) {
+      await simklRequest('/sync/add-to-list', 'POST', {
+        anime: addWatchlist.map((item) => ({ to: 'plantowatch', ids: makeAnimeIds(item) })),
+      });
+      addedToSimkl += addWatchlist.length;
+      for (const item of addWatchlist) remoteWatchlistSet.add(animeIdKey(item));
+    }
+
+    for (const remoteItem of remoteWatchlist) {
+      const id = malId(animeTitle(remoteItem)!);
+      const key = `anime:${id}`;
+      if (!id || nextWatchlistKeys.has(key)) continue;
+      try {
+        const item = await loadAnimeDetails(id);
+        nextWatchlist.push(item);
+        nextWatchlistKeys.add(key);
+        imported += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    const nextWatchedKeys = new Set(nextWatched.map(animeWatchedKey));
+    const addWatched = nextWatched.filter((entry) => !remoteWatchedSet.has(animeWatchedKey(entry)));
+    if (addWatched.length) {
+      const response = await simklRequest<SimklHistoryResponse>('/sync/history', 'POST', {
+        anime: addWatched.map((entry) => ({
+          ids: makeAnimeIds(entry.item),
+          watched_at: new Date(entry.watchedAt).toISOString(),
+        })),
+      });
+      const notFound = countNotFound(response);
+      if (notFound > 0) {
+        throw new Error(`Simkl did not recognize ${notFound} anime item(s). Check their MyAnimeList IDs and sync again.`);
+      }
+      addedToSimkl += addWatched.length;
+      for (const entry of addWatched) remoteWatchedSet.add(animeWatchedKey(entry));
+    }
+
+    for (const entry of remoteWatched) {
+      const id = malId(entry.title);
+      const key = `anime:${id}:complete`;
+      if (!id || nextWatchedKeys.has(key)) continue;
+      try {
+        const item = await loadAnimeDetails(id);
+        nextWatched.push({ item, watchedAt: timestamp(entry.watchedAt) });
+        nextWatchedKeys.add(key);
+        imported += 1;
+      } catch {
+        skipped += 1;
+      }
+    }
+
+    localStorage.setItem(ANIME_SNAPSHOT_KEY, JSON.stringify({
+      watchlist: {
+        local: nextWatchlist.map(animeIdKey),
+        remote: [...remoteWatchlistSet],
+      },
+      watched: {
+        local: nextWatched.map(animeWatchedKey),
+        remote: [...remoteWatchedSet],
+      },
+    } satisfies AnimeSyncSnapshot));
+
+    return { watchlist: nextWatchlist, watched: nextWatched, addedToSimkl, imported, removedLocally, removedFromSimkl, skipped };
   },
 
   async syncLibrary(localWatchlist: SavedMedia[], localWatched: WatchedItem[]): Promise<SyncResult> {
@@ -612,5 +820,6 @@ export const simklAPI = {
 function disconnectSimkl() {
   localStorage.removeItem(AUTH_KEY);
   localStorage.removeItem(SNAPSHOT_KEY);
+  localStorage.removeItem(ANIME_SNAPSHOT_KEY);
   window.dispatchEvent(new Event('simkl-auth-changed'));
 }

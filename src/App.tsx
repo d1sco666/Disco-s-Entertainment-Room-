@@ -5,6 +5,7 @@ import { MainLayout } from './components/layout/MainLayout';
 const Home = lazy(() => import('./pages/Home').then(({ Home }) => ({ default: Home })));
 const MoviesPage = lazy(() => import('./pages/MoviesPage').then(({ MoviesPage }) => ({ default: MoviesPage })));
 const TVShowsPage = lazy(() => import('./pages/TVShowsPage').then(({ TVShowsPage }) => ({ default: TVShowsPage })));
+const AnimePage = lazy(() => import('./pages/AnimePage').then(({ AnimePage }) => ({ default: AnimePage })));
 const TrendingPage = lazy(() => import('./pages/TrendingPage').then(({ TrendingPage }) => ({ default: TrendingPage })));
 const SearchPage = lazy(() => import('./pages/SearchPage').then(({ SearchPage }) => ({ default: SearchPage })));
 const MoviePage = lazy(() => import('./pages/MoviePage').then(({ MoviePage }) => ({ default: MoviePage })));
@@ -26,6 +27,8 @@ function App() {
           <Route index element={<Home />} />
           <Route path="movies" element={<MoviesPage />} />
           <Route path="tv-shows" element={<TVShowsPage />} />
+          <Route path="anime" element={<AnimePage />} />
+          <Route path="anime/:malId" element={<AnimePage />} />
           <Route path="watchlist" element={<WatchlistPage />} />
           <Route path="watched" element={<WatchedPage />} />
           <Route path="simkl/callback" element={<SimklCallbackPage />} />

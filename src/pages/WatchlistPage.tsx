@@ -3,10 +3,13 @@ import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { MediaCard } from '../components/features/MediaCard';
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
+import { AnimeCard } from '../components/features/AnimeCard';
+import { useAnimeLibrary } from '../hooks/useAnimeLibrary';
 import { simklAPI } from '../services/simkl';
 
 export function WatchlistPage() {
   const { watchlist, watched, removeFromWatchlist, replaceWatchlist, replaceWatched } = useMediaLibrary();
+  const animeLibrary = useAnimeLibrary();
   const [connected, setConnected] = useState(simklAPI.isConnected());
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,10 +33,16 @@ export function WatchlistPage() {
       const result = await simklAPI.syncLibrary(watchlist, watched);
       replaceWatchlist(result.watchlist);
       replaceWatched(result.watched);
+      const animeResult = await simklAPI.syncAnimeLibrary(animeLibrary.watchlist, animeLibrary.watched);
+      animeLibrary.replaceWatchlist(animeResult.watchlist);
+      animeLibrary.replaceWatched(animeResult.watched);
       setSyncMessage(
         `Sync complete: ${result.imported} imported, ${result.addedToSimkl} added to Simkl, `
         + `${result.removedLocally} removed here, ${result.removedFromSimkl} removed from Simkl.`
-        + (result.skipped ? ` ${result.skipped} item(s) could not be matched to TMDB.` : '')
+        + ` Anime: ${animeResult.imported} imported, ${animeResult.addedToSimkl} added, `
+        + `${animeResult.removedLocally} removed here, ${animeResult.removedFromSimkl} removed from Simkl.`
+        + (result.skipped ? ` ${result.skipped} movie/TV item(s) could not be matched to TMDB.` : '')
+        + (animeResult.skipped ? ` ${animeResult.skipped} anime item(s) could not be matched to MAL metadata.` : '')
       );
     } catch (syncError) {
       setError(syncError instanceof Error ? syncError.message : 'Simkl sync failed.');
@@ -69,8 +78,8 @@ export function WatchlistPage() {
             </h2>
             <p className="mt-1 text-sm text-dark-400">
               {connected
-                ? 'Connected. Sync your watchlist and watched history with Simkl.'
-                : 'Connect Simkl to sync your watchlist and watched history.'}
+                ? 'Connected. Sync your movie, TV, and anime watchlists and watched histories with Simkl.'
+                : 'Connect Simkl to sync your movie, TV, and anime watchlists and watched histories.'}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -102,14 +111,17 @@ export function WatchlistPage() {
         <p className="mt-2 text-xs text-dark-500">
           Removing a whole title also removes its Simkl history and rating; removing one watched episode only clears that episode.
         </p>
+        <p className="mt-2 text-xs text-dark-500">
+          Anime uses MyAnimeList IDs when syncing its watchlist and watched history with Simkl.
+        </p>
         {error && <p className="mt-4 text-sm text-red-400" role="alert">{error}</p>}
         {syncMessage && <p className="mt-4 text-sm text-emerald-400" role="status">{syncMessage}</p>}
       </section>
-      {watchlist.length === 0 ? (
+      {watchlist.length === 0 && animeLibrary.watchlist.length === 0 ? (
         <p className="border border-dark-800 bg-black px-6 py-12 text-center text-dark-400">
-          Your watchlist is empty. Add movies or TV shows from their detail pages.
+          Your watchlist is empty. Add movies, TV shows, or anime from their detail pages.
         </p>
-      ) : (
+      ) : watchlist.length > 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
           {watchlist.map(({ type, item }) => (
             <MediaCard
@@ -121,7 +133,23 @@ export function WatchlistPage() {
             />
           ))}
         </div>
+      ) : null}
+      {animeLibrary.watchlist.length > 0 && (
+        <section className="mt-10" aria-labelledby="anime-watchlist-title">
+          <h2 id="anime-watchlist-title" className="mb-5 text-2xl font-bold text-white">Anime Watchlist</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
+            {animeLibrary.watchlist.map((item) => (
+              <AnimeCard
+                key={item.malId}
+                item={item}
+                onRemove={() => animeLibrary.removeFromWatchlist(item.malId)}
+                removeLabel="Remove from Anime Watchlist"
+              />
+            ))}
+          </div>
+        </section>
       )}
+      {animeLibrary.storageError && <p className="mt-4 text-sm text-red-400" role="alert">{animeLibrary.storageError}</p>}
     </div>
   );
 }

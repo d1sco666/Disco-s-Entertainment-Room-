@@ -66,11 +66,11 @@ export function Header() {
 
           <div className="flex-1 max-w-xl mx-8 hidden md:block">
             <form onSubmit={handleSearch} className="relative" role="search">
-              <label htmlFor="search" className="sr-only">Search movies and TV shows</label>
+              <label htmlFor="search" className="sr-only">Search movies, TV shows, and anime</label>
               <Input
                 id="search"
                 type="search"
-                placeholder="Search movies, TV shows..."
+                placeholder="Search movies, TV shows, anime..."
                 value={searchQuery}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                 leftIcon={
@@ -89,6 +89,9 @@ export function Header() {
             </Link>
             <Link to="/tv-shows" className="hidden sm:block px-3 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-dark-100 dark:hover:bg-dark-800">
               TV Shows
+            </Link>
+            <Link to="/anime" className="hidden sm:block px-3 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-dark-100 dark:hover:bg-dark-800">
+              Anime
             </Link>
             <Link to="/watchlist" className="hidden sm:block px-3 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-dark-100 dark:hover:bg-dark-800">
               Watchlist
@@ -141,11 +144,11 @@ export function Header() {
         {showSearch && (
           <div className="md:hidden py-4 border-t border-dark-200 dark:border-dark-700">
             <form onSubmit={handleSearch} className="relative" role="search">
-              <label htmlFor="mobile-search" className="sr-only">Search movies and TV shows</label>
+              <label htmlFor="mobile-search" className="sr-only">Search movies, TV shows, and anime</label>
               <Input
                 id="mobile-search"
                 type="search"
-                placeholder="Search movies, TV shows..."
+                placeholder="Search movies, TV shows, anime..."
                 value={searchQuery}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                 leftIcon={
@@ -164,6 +167,7 @@ export function Header() {
             <nav aria-label="Mobile navigation" className="flex flex-col">
               <Link to="/movies" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">Movies</Link>
               <Link to="/tv-shows" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">TV Shows</Link>
+              <Link to="/anime" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">Anime</Link>
               <Link to="/watchlist" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">Watchlist</Link>
               <Link to="/watched" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">Watched</Link>
               <Link to="/trending" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">Trending</Link>

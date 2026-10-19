@@ -4,6 +4,8 @@ import { MediaCard } from '../components/features/MediaCard';
 import { useTrendingMovies, useTrendingTVShows, usePopularMovies, usePopularTVShows } from '../hooks/useMedia';
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import type { ContinueWatchingItem, SavedMedia } from '../types';
+import { AnimeCard } from '../components/features/AnimeCard';
+import { useAnimeLibrary } from '../hooks/useAnimeLibrary';
 
 type LibraryEntry = SavedMedia | ContinueWatchingItem;
 
@@ -46,6 +48,7 @@ function LibraryGrid({
 
 export function Home() {
   const { continueWatching, removeFromContinueWatching } = useMediaLibrary();
+  const animeLibrary = useAnimeLibrary();
   const { movies: trendingMovies, loading: trendingMoviesLoading, error: trendingMoviesError } = useTrendingMovies();
   const { shows: trendingShows, loading: trendingShowsLoading, error: trendingShowsError } = useTrendingTVShows();
   const { movies: popularMovies, loading: popularMoviesLoading, error: popularMoviesError } = usePopularMovies();
@@ -84,6 +87,23 @@ export function Home() {
           removeIconOnly
           onRemove={removeFromContinueWatching}
         />
+        {animeLibrary.continueWatching.length > 0 && (
+          <div className="mt-8">
+            <h3 className="mb-4 text-lg font-semibold text-dark-900 dark:text-white">Continue Watching Anime</h3>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
+              {animeLibrary.continueWatching.map((entry) => (
+                <AnimeCard
+                  key={entry.item.malId}
+                  item={entry.item}
+                  subtitle={`Episode ${entry.episode}`}
+                  onRemove={() => animeLibrary.removeFromContinueWatching(entry.item.malId)}
+                  removeLabel="Remove from Continue Watching"
+                />
+              ))}
+            </div>
+          </div>
+        )}
+        {animeLibrary.storageError && <p className="mt-4 text-sm text-red-400" role="alert">{animeLibrary.storageError}</p>}
       </section>
 
       <section aria-labelledby="trending-movies-title" className="deferred-home-section relative z-10 mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">

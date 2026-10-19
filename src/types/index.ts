@@ -71,6 +71,42 @@ export interface CineSrcSearchResult {
   totalPages: number;
 }
 
+export interface AnimeTitle {
+  id: string;
+  malId: number;
+  aniListId?: number;
+  title: string;
+  titleJapanese: string;
+  year: number;
+  overview: string;
+  poster: string;
+  banner: string;
+  score: number;
+  ageRating: string;
+  genres: string[];
+  episodes: number;
+  status: string;
+  malUrl: string;
+  aniListUrl?: string;
+  aniPmAvailable?: boolean;
+}
+
+export interface AnimeWatchHistoryItem {
+  item: AnimeTitle;
+  watchedAt: number;
+}
+
+export interface AnimeSimklLibrary {
+  watchlist: AnimeTitle[];
+  watched: AnimeWatchHistoryItem[];
+}
+
+export interface AnimeContinueWatchingItem {
+  item: AnimeTitle;
+  episode: number;
+  lastWatchedAt: number;
+}
+
 export type SavedMedia =
   | { type: 'movie'; item: CineSrcMovie }
   | { type: 'tv'; item: CineSrcTVShow };
