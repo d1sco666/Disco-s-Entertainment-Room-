@@ -23,8 +23,6 @@ export const animeGenres = [
   { id: 30, name: 'Sports' },
   { id: 37, name: 'Supernatural' },
   { id: 41, name: 'Suspense' },
-  { id: 49, name: 'Erotica' },
-  { id: 12, name: 'Hentai' },
 ];
 
 export const animeAgeRatings = [
@@ -33,7 +31,6 @@ export const animeAgeRatings = [
   { value: 'pg13', label: 'PG-13 - Teens 13 or older' },
   { value: 'r17', label: 'R - 17+ (violence & profanity)' },
   { value: 'r', label: 'R+ - Mild nudity' },
-  { value: 'rx', label: 'Rx - Hentai' },
 ];
 
 interface JikanAnime {
@@ -57,6 +54,20 @@ interface JikanAnime {
 interface JikanResponse<T> {
   data: T;
   pagination?: { last_visible_page: number; has_next_page: boolean };
+}
+
+const EXPLICIT_GENRE_IDS = new Set([12, 49]);
+
+function isExplicitJikanAnime(anime: JikanAnime): boolean {
+  return /\brx\b|hentai/i.test(anime.rating || '')
+    || anime.genres.some(({ mal_id, name }) => (
+      EXPLICIT_GENRE_IDS.has(mal_id) || /^(hentai|erotica)$/i.test(name)
+    ));
+}
+
+export function isExplicitAnimeTitle(item: Pick<AnimeTitle, 'ageRating' | 'genres'>): boolean {
+  return /\brx\b|hentai/i.test(item.ageRating)
+    || item.genres.some((genre) => /^(hentai|erotica)$/i.test(genre));
 }
 
 interface AniListMedia {
@@ -196,7 +207,7 @@ export async function discoverAnime(
     limit: '24',
     order_by: filters.sortBy === 'top_rated' ? 'score' : 'popularity',
     sort: 'desc',
-    sfw: filters.ageRating === 'rx' || filters.genreId === 12 || filters.genreId === 49 ? 'false' : 'true',
+    sfw: 'true',
   });
   if (filters.genreId) params.set('genres', String(filters.genreId));
   if (filters.ageRating) params.set('rating', filters.ageRating);
@@ -210,7 +221,8 @@ export async function discoverAnime(
     throw new Error(`MyAnimeList catalog request failed (${response.status}). Please try again shortly.`);
   }
   const result = await response.json() as JikanResponse<JikanAnime[]>;
-  const malIds = result.data.map(({ mal_id }) => mal_id);
+  const safeAnime = result.data.filter((anime) => !isExplicitJikanAnime(anime));
+  const malIds = safeAnime.map(({ mal_id }) => mal_id);
 
   let aniListMatches = new Map<number, AniListMedia>();
   const warnings: string[] = [];
@@ -230,7 +242,7 @@ export async function discoverAnime(
   }
 
   return {
-    items: result.data.map((anime) => ({
+    items: safeAnime.map((anime) => ({
       ...mapAnime(anime, aniListMatches.get(anime.mal_id)),
       aniPmAvailable: availability.get(anime.mal_id),
     })),
@@ -260,6 +272,9 @@ async function getAniPmAvailability(malIds: number[], signal?: AbortSignal): Pro
 
 async function getJapaneseAnimeDetails(malId: number): Promise<AnimeDetailsResult> {
   const result = await jikanRequest<JikanAnime>(`/anime/${malId}/full`);
+  if (isExplicitJikanAnime(result.data)) {
+    throw new Error('Explicit hentai titles are not available in the anime section.');
+  }
   const warnings: string[] = [];
   let aniList: AniListMedia | undefined;
   try {
@@ -288,23 +303,24 @@ export async function searchAnime(query: string, signal?: AbortSignal): Promise<
     throw new Error(`MyAnimeList search failed (${response.status}). Please try again shortly.`);
   }
   const result = await response.json() as JikanResponse<JikanAnime[]>;
+  const safeAnime = result.data.filter((anime) => !isExplicitJikanAnime(anime));
   const warnings: string[] = [];
   let aniListMatches = new Map<number, AniListMedia>();
   try {
-    aniListMatches = await getAniListMatches(result.data.map(({ mal_id }) => mal_id), signal);
+    aniListMatches = await getAniListMatches(safeAnime.map(({ mal_id }) => mal_id), signal);
   } catch (error) {
     if (signal?.aborted) throw error;
     warnings.push(error instanceof Error ? error.message : 'AniList IDs could not be loaded.');
   }
   let availability = new Map<number, boolean>();
   try {
-    availability = await getAniPmAvailability(result.data.map(({ mal_id }) => mal_id), signal);
+    availability = await getAniPmAvailability(safeAnime.map(({ mal_id }) => mal_id), signal);
   } catch (error) {
     if (signal?.aborted) throw error;
     warnings.push(error instanceof Error ? error.message : 'Ani.pm availability could not be checked.');
   }
   return {
-    items: result.data.map((anime) => ({
+    items: safeAnime.map((anime) => ({
       ...mapAnime(anime, aniListMatches.get(anime.mal_id)),
       aniPmAvailable: availability.get(anime.mal_id),
     })),

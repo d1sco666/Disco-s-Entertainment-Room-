@@ -225,7 +225,7 @@ class TMDBAPI {
 
   private async request<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
     if (!API_KEY) {
-      throw new Error('TMDB API key is missing. Add VITE_TMDB_API_KEY to .env.local and restart the dev server.');
+      throw new Error('TMDB API key is missing. Set VITE_TMDB_API_KEY in .env.local for local development or in your deployment build variables, then rebuild.');
     }
 
     const url = new URL(`${API_URL}${endpoint}`);

@@ -6,7 +6,7 @@ A personal movie, TV, and anime discovery website using **TMDB**, **MyAnimeList*
 
 - 🎬 **Movie & TV Discovery** - Popular, trending, search, posters, ratings, and certifications from TMDB
 - 🎥 **Player Choice** - Choose between Vimeus, CineSrc, Vidstuck, and Zxcstream for movies and TV episodes
-- 🍥 **Anime Discovery** - Browse anime by genre, age rating, provider availability, year, and score, with MAL/AniList ID matching and Ani.pm playback
+- 🍥 **Anime Discovery** - Browse non-explicit anime by genre, age rating, provider availability, year, and score, with MAL/AniList ID matching and Ani.pm playback
 - 🔍 **Search Functionality** - Find content instantly
 - 📱 **Responsive Design** - Works on all devices
 - 🌙 **Dark Mode** - Easy on the eyes
@@ -70,7 +70,7 @@ Vimeus documents the `view_key` as a public embed parameter and requires it in e
 ### Auth0 setup
 
 - Create an Auth0 **Single Page Application** and copy its domain and client ID to `.env.local`.
-- Add your app origin (for example `http://localhost:3000`) to the Auth0 application's **Allowed Callback URLs**, **Allowed Logout URLs**, and **Allowed Web Origins**. Add the production origin for deployment.
+- Add your app origin (for example `http://localhost:3000`) to the Auth0 application's **Allowed Callback URLs**, **Allowed Logout URLs**, and **Allowed Web Origins**. For the current production site, add `https://entertainment-room-666.av81008.workers.dev` to all three lists (without a trailing slash). Add any other production or preview origins you use.
 - Set `VITE_AUTH0_AUDIENCE` only if the app needs access tokens for a configured Auth0 API.
 - Restart Vite after changing environment variables. Auth0 controls appear in the navigation when the domain and client ID are configured.
 

@@ -4,6 +4,7 @@ import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
 import { Image } from '../ui/Image';
 import type { AnimeTitle } from '../../types';
+import { isExplicitAnimeTitle } from '../../services/anime';
 
 interface AnimeCardProps {
   item: AnimeTitle;
@@ -13,6 +14,8 @@ interface AnimeCardProps {
 }
 
 export function AnimeCard({ item, onRemove, removeLabel = 'Remove from anime list', subtitle }: AnimeCardProps) {
+  if (isExplicitAnimeTitle(item)) return null;
+
   return (
     <Card
       variant="default"
