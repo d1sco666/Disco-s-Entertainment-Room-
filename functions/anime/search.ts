@@ -1,5 +1,11 @@
 const ANIKOTO_API_URL = 'https://anikotoapi.site';
 
+const UPSTREAM_HEADERS: HeadersInit = {
+  Accept: 'application/json',
+  'User-Agent':
+    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+};
+
 export const onRequestGet = async ({ request }) => {
   const url = new URL(request.url);
   const query = url.searchParams.get('q') ?? '';
@@ -11,7 +17,7 @@ export const onRequestGet = async ({ request }) => {
   try {
     const response = await fetch(
       `${ANIKOTO_API_URL}/recent-anime?page=${page}&per_page=${perPage}`,
-      { headers: { Accept: 'application/json' } },
+      { headers: UPSTREAM_HEADERS },
     );
     const body = await response.text();
     if (!response.ok) {
@@ -22,6 +28,22 @@ export const onRequestGet = async ({ request }) => {
           'access-control-allow-origin': '*',
         },
       });
+    }
+
+    if (!body || body.trim().length === 0) {
+      return new Response(
+        JSON.stringify({
+          ok: false,
+          error: `Anikoto API returned empty response (HTTP ${response.status})`,
+        }),
+        {
+          status: 502,
+          headers: {
+            'content-type': 'application/json',
+            'access-control-allow-origin': '*',
+          },
+        },
+      );
     }
 
     const data = JSON.parse(body);
