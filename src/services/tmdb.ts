@@ -99,6 +99,64 @@ export interface TMDBCountry {
   native_name: string;
 }
 
+// TMDB keyword IDs for the categories this app never shows: fan-made
+// films, fake/placeholder movies and adult titles. Applied through
+// `without_keywords` on the discover endpoints, which support it.
+const JUNK_KEYWORD_IDS = [
+  189978, // fan film
+  378267, // fanfilm
+  253056, // fanfic
+  328865, // fake film
+  360629, // adult
+  284535, // adult video
+  161919, // adult animation
+  337153, // adult drama
+  385955, // porn
+  155139, // porn parody
+  256466, // erotic
+  302868, // erotic comedy
+  298666, // erotic romance
+  155691, // erotic vignettes
+  352503, // erotic theater
+  198385, // hentai
+  155477, // softcore
+  325693, // erotica
+  354470, // sex scene
+  33451, // masturbation
+  199040, // strip
+  155857, // strip tease
+  320667, // adult film actress
+  379142, // adult film actor
+  379979, // mature and adult film
+];
+
+// A title needs a real audience before its average rating means
+// anything. Without this floor, fan films rated 10.0 on a single vote
+// dominate the "Top Rated" sort.
+const MIN_TOP_RATED_VOTES = 200;
+
+// Titles that state their junk category outright. TMDB leaves some of
+// these unflagged and without keywords, so they are dropped client side
+// as well. Patterns stay specific to avoid catching mainstream titles.
+const JUNK_TITLE_PATTERNS = [
+  /\bfan\s*film\b/i,
+  /\bfan\s*made\b/i,
+  /\bfanfic\b/i,
+  /\bfake\s*film\b/i,
+  /\bporn\b/i,
+  /\bhentai\b/i,
+  /\berotic\b/i,
+  /\berotica\b/i,
+  /\bsoftcore\b/i,
+  /\bsex\s*scene\b/i,
+  /\bmasturbat/i,
+  /\badult\s*(?:film|video|animation|drama)\b/i,
+];
+
+function isJunkTitle(title: string) {
+  return JUNK_TITLE_PATTERNS.some((pattern) => pattern.test(title));
+}
+
 const genreNames: Record<number, string> = {
   12: 'Adventure', 14: 'Fantasy', 16: 'Animation', 18: 'Drama',
   27: 'Horror', 28: 'Action', 35: 'Comedy', 36: 'History',
@@ -277,8 +335,14 @@ class TMDBAPI {
       page: String(page),
       include_adult: 'false',
     });
-    const movies = data.results.filter((result) => result.media_type === 'movie').map((result) => mapMovie(result as TMDBMovie));
-    const tvShows = data.results.filter((result) => result.media_type === 'tv').map((result) => mapTVShow(result as TMDBTVShow));
+    const movies = data.results
+      .filter((result) => result.media_type === 'movie')
+      .map((result) => mapMovie(result as TMDBMovie))
+      .filter((movie) => !isJunkTitle(movie.title));
+    const tvShows = data.results
+      .filter((result) => result.media_type === 'tv')
+      .map((result) => mapTVShow(result as TMDBTVShow))
+      .filter((show) => !isJunkTitle(show.name));
 
     return {
       movies,
@@ -291,12 +355,18 @@ class TMDBAPI {
 
   async getPopularMovies(page = 1): Promise<{ movies: CineSrcMovie[]; totalPages: number }> {
     const data = await this.request<TMDBList<TMDBMovie>>('/movie/popular', { page: String(page) });
-    return { movies: data.results.map(mapMovie), totalPages: data.total_pages };
+    return {
+      movies: data.results.map(mapMovie).filter((movie) => !isJunkTitle(movie.title)),
+      totalPages: data.total_pages,
+    };
   }
 
   async getPopularTVShows(page = 1): Promise<{ tvShows: CineSrcTVShow[]; totalPages: number }> {
     const data = await this.request<TMDBList<TMDBTVShow>>('/tv/popular', { page: String(page) });
-    return { tvShows: data.results.map(mapTVShow), totalPages: data.total_pages };
+    return {
+      tvShows: data.results.map(mapTVShow).filter((show) => !isJunkTitle(show.name)),
+      totalPages: data.total_pages,
+    };
   }
 
   async discoverTitles(
@@ -331,13 +401,25 @@ class TMDBAPI {
     if (filters.countryCode) {
       params.with_origin_country = filters.countryCode;
     }
+    params.without_keywords = JUNK_KEYWORD_IDS.join(',');
+    // Popularity already implies an audience, so unreleased blockbusters
+    // with no votes yet stay visible. Only the rating sort needs a floor.
+    if (filters.sortBy === 'top_rated') {
+      params['vote_count.gte'] = String(MIN_TOP_RATED_VOTES);
+    }
 
     if (type === 'movie') {
       const data = await this.request<TMDBList<TMDBMovie>>('/discover/movie', params);
-      return { items: data.results.map(mapMovie), totalPages: data.total_pages };
+      return {
+        items: data.results.map(mapMovie).filter((movie) => !isJunkTitle(movie.title)),
+        totalPages: data.total_pages,
+      };
     }
     const data = await this.request<TMDBList<TMDBTVShow>>('/discover/tv', params);
-    return { items: data.results.map(mapTVShow), totalPages: data.total_pages };
+    return {
+      items: data.results.map(mapTVShow).filter((show) => !isJunkTitle(show.name)),
+      totalPages: data.total_pages,
+    };
   }
 
   async getWatchProviders(type: 'movie' | 'tv'): Promise<TMDBWatchProvider[]> {
@@ -354,7 +436,10 @@ class TMDBAPI {
 
   async getTrendingMovies(page = 1): Promise<{ movies: CineSrcMovie[]; totalPages: number }> {
     const data = await this.request<TMDBList<TMDBMovie>>('/trending/movie/day', { page: String(page) });
-    return { movies: data.results.map(mapMovie), totalPages: data.total_pages };
+    return {
+      movies: data.results.map(mapMovie).filter((movie) => !isJunkTitle(movie.title)),
+      totalPages: data.total_pages,
+    };
   }
 
   async getPopularHorrorMovies(page = 1): Promise<{ movies: CineSrcMovie[]; totalPages: number }> {
@@ -364,8 +449,12 @@ class TMDBAPI {
       with_genres: '27',
       'vote_count.gte': '20',
       include_adult: 'false',
+      without_keywords: JUNK_KEYWORD_IDS.join(','),
     });
-    return { movies: data.results.map(mapMovie), totalPages: data.total_pages };
+    return {
+      movies: data.results.map(mapMovie).filter((movie) => !isJunkTitle(movie.title)),
+      totalPages: data.total_pages,
+    };
   }
 
   async getMovieTrailer(movieId: number): Promise<string | null> {
@@ -389,7 +478,10 @@ class TMDBAPI {
 
   async getTrendingTVShows(page = 1): Promise<{ tvShows: CineSrcTVShow[]; totalPages: number }> {
     const data = await this.request<TMDBList<TMDBTVShow>>('/trending/tv/day', { page: String(page) });
-    return { tvShows: data.results.map(mapTVShow), totalPages: data.total_pages };
+    return {
+      tvShows: data.results.map(mapTVShow).filter((show) => !isJunkTitle(show.name)),
+      totalPages: data.total_pages,
+    };
   }
 
   async getMovieDetails(id: string): Promise<CineSrcMovie> {
