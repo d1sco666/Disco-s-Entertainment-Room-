@@ -129,20 +129,31 @@ function buildKitsuUrl(endpoint: string, params: Record<string, string | string[
 }
 
 async function kitsuRequest<T>(url: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(url, { signal });
+  const response = await fetch(url, {
+    signal,
+    headers: { Accept: 'application/vnd.api+json' },
+  });
+  const text = await response.text();
+  let body: unknown = null;
+  if (text) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      body = null;
+    }
+  }
   if (!response.ok) {
     let detail = `HTTP ${response.status}`;
-    try {
-      const body = (await response.json()) as { errors?: { detail?: string; title?: string }[] };
-      if (body.errors && body.errors.length > 0) {
-        detail = body.errors.map((e) => e.detail ?? e.title).join('; ');
-      }
-    } catch {
-      // ignore body parse errors
+    const errors = (body as { errors?: { detail?: string; title?: string }[] } | null)?.errors;
+    if (errors && errors.length > 0) {
+      detail = errors.map((e) => e.detail ?? e.title).join('; ');
     }
     throw new Error(`Kitsu API error ${response.status}: ${detail}`);
   }
-  return response.json() as Promise<T>;
+  if (body === null) {
+    throw new Error('Kitsu API returned an empty response. Please try again.');
+  }
+  return body as T;
 }
 
 function safeNumber(value: string | null): number | null {
@@ -217,8 +228,8 @@ function formatToKitsuSubtype(format: string): string {
 
 async function discoverAnimeCore(filters: AnimeSearchFilters, page: number, signal?: AbortSignal): Promise<AnimeTitlesResult> {
   const params: Record<string, string | string[] | undefined> = {
-    'page[limit]': String(24),
-    'page[offset]': String((page - 1) * 24),
+    'page[limit]': String(20),
+    'page[offset]': String((page - 1) * 20),
     'include': 'mappings,categories',
     'fields[anime]': 'slug,titles,canonicalTitle,posterImage,coverImage,averageRating,ageRating,ageRatingGuide,status,subtype,episodeCount,startDate,synopsis,nsfw,popularityRank,ratingRank,youtubeVideoId,mappings,categories',
     'fields[mappings]': 'externalSite,externalId',
@@ -266,7 +277,7 @@ async function discoverAnimeCore(filters: AnimeSearchFilters, page: number, sign
   }
 
   const total = result.meta?.count ?? 0;
-  const hasMore = page * 24 < total;
+  const hasMore = page * 20 < total;
   return {
     items: items.map((item) => ({ ...item, aniPmAvailable: item.malId === undefined ? undefined : availability.get(item.malId) })),
     page,
@@ -281,7 +292,7 @@ export async function discoverAnime(filters: AnimeSearchFilters, page: number, s
 
 export async function searchAnime(query: string, signal?: AbortSignal): Promise<AnimeTitlesResult> {
   const url = buildKitsuUrl('/anime', {
-    'page[limit]': String(24),
+    'page[limit]': String(20),
     'filter[text]': query,
     'include': 'mappings,categories',
     'fields[anime]': 'slug,titles,canonicalTitle,posterImage,coverImage,averageRating,ageRating,ageRatingGuide,status,subtype,episodeCount,startDate,synopsis,nsfw,popularityRank,ratingRank,youtubeVideoId,mappings,categories',
