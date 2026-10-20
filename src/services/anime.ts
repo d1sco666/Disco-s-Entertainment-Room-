@@ -42,6 +42,7 @@ function mapAnimeTitle(raw: unknown): AnimeTitle {
     score: a['score'] ? Number(a['score']) || 0 : 0,
     status: a['status'] ? String(a['status']) : 'Unknown',
     season: a['season'] ? String(a['season']) : undefined,
+    type: (a['terms_by_type'] as Record<string, string[]> | undefined)?.type?.[0],
     source: a['source'] ? String(a['source']) : undefined,
     duration: a['duration'] ? String(a['duration']) : undefined,
     rating: a['rating'] ? String(a['rating']) : undefined,
@@ -95,19 +96,57 @@ async function anikotoGet<T>(path: string, signal?: AbortSignal): Promise<T> {
   return body as T;
 }
 
+export interface AnimeFilters {
+  genre?: string;
+  type?: string;
+  year?: number | null;
+  status?: string;
+  rating?: string;
+}
+
 export async function fetchRecentAnime(
   page = 1,
   perPage = 20,
+  filters: AnimeFilters = {},
   signal?: AbortSignal
 ): Promise<AnimeListResult> {
+  const params = new URLSearchParams({
+    page: String(page),
+    per_page: String(perPage),
+  });
+  if (filters.genre) params.set('genre', filters.genre);
+  if (filters.type) params.set('type', filters.type);
+  if (filters.year) params.set('year', String(filters.year));
+  if (filters.status) params.set('status', filters.status);
+
   const body = await anikotoGet<{
     ok: boolean;
     data: unknown[];
     pagination: { page: number; per_page: number; total: number; total_pages: number };
-  }>(`/recent?page=${page}&per_page=${perPage}`, signal);
+  }>(`/recent?${params.toString()}`, signal);
+
+  let items = (body.data ?? []).map(mapAnimeTitle);
+
+  // Client-side filtering since the upstream API returns the same list
+  // regardless of filter query parameters.
+  if (filters.genre) {
+    items = items.filter((item) => item.genres.includes(filters.genre!));
+  }
+  if (filters.type) {
+    items = items.filter((item) => item.type === filters.type);
+  }
+  if (filters.year) {
+    items = items.filter((item) => item.year === filters.year);
+  }
+  if (filters.status) {
+    items = items.filter((item) => item.status === filters.status);
+  }
+  if (filters.rating) {
+    items = items.filter((item) => item.rating === filters.rating);
+  }
 
   return {
-    items: (body.data ?? []).map(mapAnimeTitle),
+    items,
     page: body.pagination.page,
     perPage: body.pagination.per_page,
     total: body.pagination.total,

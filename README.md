@@ -6,7 +6,7 @@ A personal movie, TV, and anime discovery website using **TMDB**, **MyAnimeList*
 
 - 🎬 **Movie & TV Discovery** - Popular, trending, search, posters, ratings, and certifications from TMDB
 - 🎥 **Player Choice** - Choose between Vimeus, CineSrc, Vidstuck, and Zxcstream for movies and TV episodes
-- 🍥 **Anime Discovery** - Browse non-explicit anime by genre, age rating, provider availability, year, and score, with MAL/Kitsu ID matching and Ani.pm playback
+- 🍥 **Anime Discovery** - Browse non-explicit anime by genre, type, status, rating, and release year, with MAL/Kitsu ID matching and Ani.pm playback
 - 🔍 **Search Functionality** - Find content instantly
 - 📱 **Responsive Design** - Works on all devices
 - 🌙 **Dark Mode** - Easy on the eyes
@@ -109,7 +109,7 @@ src/
 - See the [Vimeus API documentation](https://vimeus.com/) for supported embed URLs and options.
 - Vidstuck embeds use `https://vidstuck.cc/embed/movie/{tmdb_id}` for movies and `https://vidstuck.cc/embed/tv/{tmdb_id}/{season}/{episode}` for TV episodes. See the [Vidstuck documentation](https://vidstuck.cc/documentation).
 - Zxcstream opens movies at `https://zxcstream.cc/player/movie/{tmdb_id}` and episodes at `https://zxcstream.cc/player/tv/{tmdb_id}/{season}/{episode}`. Choose English (`dubLang=en`) or Spanish (`dubLang=es`) when selecting Zxcstream.
-- Anime metadata is browsed from **Kitsu** and matched to MAL/AniList IDs via Kitsu mappings. Both IDs are stored with anime library entries; the Ani.pm player uses an AniList ID when available and falls back to the MAL ID. Ani.pm embeds use `https://ani.pm/embed/ani/{anilist_id}/{episode}/{sub|dub}` or `https://ani.pm/embed/mal/{mal_id}/{episode}/{sub|dub}`. Anime watchlist and watched history sync with Simkl using MAL and AniList IDs; continue-watching remains local.
+- Anime metadata is browsed from **Kitsu** and matched to MAL/AniList IDs via Kitsu mappings. Both IDs are stored with anime library entries; the Ani.pm player uses an AniList ID when available and falls back to the MAL ID. Ani.pm embeds use `https://ani.pm/embed/ani/{anilist_id}/{episode}/{sub|dub}` or `https://ani.pm/embed/mal/{mal_id}/{episode}/{sub|dub}`. Anime watchlist and watched history sync with Simkl using MAL and AniList IDs; continue-watching remains local. Anime entries include a type field (TV, Movie, OVA, ONA, Special, Music).
 
 ### Content Browsing
 - Trending movies & TV shows
@@ -126,7 +126,7 @@ src/
 - **Search** - Debounced search results
 - **Movie Detail** - Info and provider picker for embedded playback
 - **TV Show Detail** - Season/episode selector and provider picker for embedded playback
-- **Anime** - Anime catalog filters, Kitsu/MAL metadata and IDs, local anime library, and Ani.pm episode playback
+- **Anime** - Genre, type, status, rating, and year filters, Kitsu/MAL metadata and IDs, local anime library, and Ani.pm episode playback
 - **Watchlist** - Local collection with optional Simkl synchronization
 - **Watched** - Explicitly marked movies and episodes, optionally synced with Simkl
 

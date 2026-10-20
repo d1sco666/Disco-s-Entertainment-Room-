@@ -4,10 +4,11 @@ import {
   fetchAnimeSeries,
   type AnimeListResult,
   type AnimeSeriesResult,
+  type AnimeFilters,
 } from '../services/anime';
 import type { AnimeTitle } from '../types';
 
-export function useAnimeDiscovery(enabled: boolean, page: number, perPage: number) {
+export function useAnimeDiscovery(enabled: boolean, page: number, perPage: number, filters: AnimeFilters) {
   const [items, setItems] = useState<AnimeTitle[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -37,7 +38,7 @@ export function useAnimeDiscovery(enabled: boolean, page: number, perPage: numbe
     setError(null);
 
     const timer = window.setTimeout(() => {
-      fetchRecentAnime(page, perPage, controller.signal)
+      fetchRecentAnime(page, perPage, filters, controller.signal)
         .then((result: AnimeListResult) => {
           if (version !== requestVersion.current) return;
           setItems(result.items);
@@ -58,7 +59,7 @@ export function useAnimeDiscovery(enabled: boolean, page: number, perPage: numbe
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [enabled, page, perPage]);
+  }, [enabled, page, perPage, filters]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || !hasMore) return;
@@ -68,7 +69,7 @@ export function useAnimeDiscovery(enabled: boolean, page: number, perPage: numbe
     setLoadingMore(true);
     setError(null);
     try {
-      const result = await fetchRecentAnime(nextPage, perPage, controller.signal);
+      const result = await fetchRecentAnime(nextPage, perPage, filters, controller.signal);
       if (version !== requestVersion.current) return;
       setItems((current) => [...current, ...result.items]);
       setResultPage(result.page);
@@ -81,7 +82,7 @@ export function useAnimeDiscovery(enabled: boolean, page: number, perPage: numbe
     } finally {
       if (version === requestVersion.current) setLoadingMore(false);
     }
-  }, [loading, loadingMore, hasMore, resultPage, perPage]);
+  }, [loading, loadingMore, hasMore, resultPage, perPage, filters]);
 
   return { items, loading, loadingMore, error, page: resultPage, totalPages, total, hasMore, loadMore };
 }

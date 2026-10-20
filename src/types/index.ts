@@ -85,6 +85,7 @@ export interface AnimeTitle {
   status: string;
   season?: string;
   source?: string;
+  type?: string;
   duration?: string;
   rating?: string;
   episodes: number;
