@@ -184,6 +184,7 @@ export function useGenreTitles(
   sortBy: 'popular' | 'top_rated',
   year: number | null,
   providerId: number | null,
+  countryCode: string | null,
 ) {
   const [items, setItems] = useState<(CineSrcMovie | CineSrcTVShow)[]>([]);
   const [loading, setLoading] = useState(false);
@@ -202,7 +203,7 @@ export function useGenreTitles(
     setPage(1);
     setTotalPages(1);
     setError(null);
-    tmdbAPI.discoverTitles(type, { genreId, ageRating, sortBy, year, providerId })
+    tmdbAPI.discoverTitles(type, { genreId, ageRating, sortBy, year, providerId, countryCode })
       .then((data) => {
         if (!active || version !== requestVersion.current) return;
         setItems(data.items);
@@ -221,7 +222,7 @@ export function useGenreTitles(
     return () => {
       active = false;
     };
-  }, [type, genreId, ageRating, sortBy, year, providerId]);
+  }, [type, genreId, ageRating, sortBy, year, providerId, countryCode]);
 
   const loadMore = useCallback(async () => {
     if (loadingMore || page >= totalPages) return;
@@ -229,7 +230,7 @@ export function useGenreTitles(
     setLoadingMore(true);
     setError(null);
     try {
-      const data = await tmdbAPI.discoverTitles(type, { genreId, ageRating, sortBy, year, providerId }, page + 1);
+      const data = await tmdbAPI.discoverTitles(type, { genreId, ageRating, sortBy, year, providerId, countryCode }, page + 1);
       if (version !== requestVersion.current) return;
       setItems((current) => [...current, ...data.items]);
       setPage(page + 1);
@@ -241,7 +242,7 @@ export function useGenreTitles(
     } finally {
       if (version === requestVersion.current) setLoadingMore(false);
     }
-  }, [type, genreId, ageRating, sortBy, year, providerId, loadingMore, page, totalPages]);
+  }, [type, genreId, ageRating, sortBy, year, providerId, countryCode, loadingMore, page, totalPages]);
 
   return { items, loading, loadingMore, error, loadMore, hasMore: page < totalPages };
 }

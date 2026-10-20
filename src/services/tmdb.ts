@@ -93,6 +93,12 @@ export interface TMDBWatchProvider {
   display_priority: number;
 }
 
+export interface TMDBCountry {
+  iso_3166_1: string;
+  english_name: string;
+  native_name: string;
+}
+
 const genreNames: Record<number, string> = {
   12: 'Adventure', 14: 'Fantasy', 16: 'Animation', 18: 'Drama',
   27: 'Horror', 28: 'Action', 35: 'Comedy', 36: 'History',
@@ -301,6 +307,7 @@ class TMDBAPI {
       sortBy: 'popular' | 'top_rated';
       year: number | null;
       providerId: number | null;
+      countryCode: string | null;
     },
     page = 1,
   ): Promise<{ items: (CineSrcMovie | CineSrcTVShow)[]; totalPages: number }> {
@@ -321,6 +328,9 @@ class TMDBAPI {
       params.certification_country = 'US';
       params.certification = filters.ageRating;
     }
+    if (filters.countryCode) {
+      params.with_origin_country = filters.countryCode;
+    }
 
     if (type === 'movie') {
       const data = await this.request<TMDBList<TMDBMovie>>('/discover/movie', params);
@@ -336,6 +346,10 @@ class TMDBAPI {
       { watch_region: 'US' },
     );
     return data.results;
+  }
+
+  async getCountries(): Promise<TMDBCountry[]> {
+    return this.request<TMDBCountry[]>('/configuration/countries');
   }
 
   async getTrendingMovies(page = 1): Promise<{ movies: CineSrcMovie[]; totalPages: number }> {

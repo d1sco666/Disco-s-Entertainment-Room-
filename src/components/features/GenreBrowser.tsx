@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { MediaGrid } from './MediaGrid';
 import { useGenreTitles } from '../../hooks/useMedia';
-import { movieGenres, tmdbAPI, tvGenres, type TMDBWatchProvider } from '../../services/tmdb';
+import { movieGenres, tmdbAPI, tvGenres, type TMDBCountry, type TMDBWatchProvider } from '../../services/tmdb';
 
 interface GenreBrowserProps {
   type: 'movie' | 'tv';
@@ -16,6 +16,10 @@ export function GenreBrowser({ type }: GenreBrowserProps) {
   const [providers, setProviders] = useState<TMDBWatchProvider[]>([]);
   const [providersLoading, setProvidersLoading] = useState(true);
   const [providersError, setProvidersError] = useState<string | null>(null);
+  const [countryCode, setCountryCode] = useState('');
+  const [countries, setCountries] = useState<TMDBCountry[]>([]);
+  const [countriesLoading, setCountriesLoading] = useState(true);
+  const [countriesError, setCountriesError] = useState<string | null>(null);
   const { items, loading, loadingMore, error, loadMore, hasMore } = useGenreTitles(
     type,
     selectedGenre ? Number(selectedGenre) : null,
@@ -23,6 +27,7 @@ export function GenreBrowser({ type }: GenreBrowserProps) {
     sortBy,
     year ? Number(year) : null,
     providerId ? Number(providerId) : null,
+    countryCode || null,
   );
   const genres = type === 'movie' ? movieGenres : tvGenres;
   const label = type === 'movie' ? 'movies' : 'TV shows';
@@ -30,6 +35,12 @@ export function GenreBrowser({ type }: GenreBrowserProps) {
     ? ['G', 'PG', 'PG-13', 'R', 'NC-17']
     : ['TV-Y', 'TV-Y7', 'TV-G', 'TV-PG', 'TV-14', 'TV-MA'];
   const currentYear = new Date().getFullYear();
+  const countryOptions = countries
+    .map((country) => ({
+      code: country.iso_3166_1,
+      name: country.native_name || country.english_name,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   useEffect(() => {
     let active = true;
@@ -54,16 +65,39 @@ export function GenreBrowser({ type }: GenreBrowserProps) {
     };
   }, [type]);
 
+  useEffect(() => {
+    let active = true;
+    setCountriesLoading(true);
+    setCountriesError(null);
+    tmdbAPI.getCountries()
+      .then((availableCountries) => {
+        if (active) setCountries(availableCountries);
+      })
+      .catch((countryError: unknown) => {
+        if (active) {
+          setCountriesError(countryError instanceof Error
+            ? countryError.message
+            : 'Could not load countries.');
+        }
+      })
+      .finally(() => {
+        if (active) setCountriesLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <section aria-labelledby={`${type}-genres-title`} className="mb-8">
       <div className="mb-5">
         <div>
           <h2 id={`${type}-genres-title`} className="text-2xl font-bold text-dark-100">Browse {label}</h2>
-          <p className="mt-1 text-sm text-dark-400">Combine genre, age rating, provider, release year, and sort filters.</p>
+          <p className="mt-1 text-sm text-dark-400">Combine genre, age rating, provider, country, release year, and sort filters.</p>
         </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
         <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
           Genre
           <select
@@ -116,6 +150,24 @@ export function GenreBrowser({ type }: GenreBrowserProps) {
           </select>
         </label>
         <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
+          Country of origin
+          <select
+            value={countryCode}
+            onChange={(event) => setCountryCode(event.target.value)}
+            disabled={countriesLoading || Boolean(countriesError)}
+            className="w-full border border-dark-600 bg-dark-800 px-3 py-2.5 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <option value="">
+              {countriesLoading ? 'Loading countries…' : countriesError ? 'Countries unavailable' : 'Any country'}
+            </option>
+            {countryOptions.map((country) => (
+              <option key={country.code} value={country.code}>
+                {country.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
           Release year
           <select
             value={year}
@@ -132,6 +184,11 @@ export function GenreBrowser({ type }: GenreBrowserProps) {
       {providersError && (
         <p className="mb-4 text-sm text-red-400" role="alert">
           Could not load streaming providers: {providersError}
+        </p>
+      )}
+      {countriesError && (
+        <p className="mb-4 text-sm text-red-400" role="alert">
+          Could not load countries: {countriesError}
         </p>
       )}
 

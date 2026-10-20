@@ -116,12 +116,13 @@ src/
 - Popular movies & TV shows
 - Search with debounced queries
 - Genres shown with movie and TV metadata
+- Country of origin filter for movies and TV shows
 - Manual "Load More" pagination
 
 ### Pages
 - **Home** - Continue Watching + trending/popular sections
-- **Movies** - Popular & Trending tabs
-- **TV Shows** - Popular & Trending tabs
+- **Movies** - Browse movies by genre, age rating, streaming provider, country of origin, release year, and sort
+- **TV Shows** - Browse TV shows by genre, age rating, streaming provider, country of origin, release year, and sort
 - **Trending** - Combined trending view
 - **Search** - Debounced search results
 - **Movie Detail** - Info and provider picker for embedded playback
