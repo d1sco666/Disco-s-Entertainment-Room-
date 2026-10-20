@@ -15,7 +15,7 @@ function GenreChip({ genre, active, onToggle }: { genre: { id: string; name: str
   return (
     <Button
       type="button"
-      variant={active ? 'primary' : 'default'}
+      variant={active ? 'primary' : 'ghost'}
       size="sm"
       onClick={() => onToggle(genre.id)}
       className="whitespace-nowrap hover:scale-[1.02] transition-transform"
