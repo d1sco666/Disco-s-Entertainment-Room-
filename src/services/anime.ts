@@ -44,6 +44,7 @@ interface AniListMedia {
   episodes: number | null;
   startDate: { year: number | null };
   status: string | null;
+  format: string | null;
   isAdult: boolean;
   siteUrl: string;
 }
@@ -62,10 +63,11 @@ interface AniListResponse {
 }
 
 export interface AnimeSearchFilters {
-  genreId: string | null;
+  genreIds: string[];
   ageRating: string;
   sortBy: 'popular' | 'top_rated';
   year: number | null;
+  format: string | null;
 }
 
 export interface AnimePageResult {
@@ -84,11 +86,6 @@ export interface AnimeTitlesResult {
 export interface AnimeDetailsResult {
   item: AnimeTitle;
   warning: string | null;
-}
-
-export function isExplicitAnimeTitle(item: Pick<AnimeTitle, 'ageRating' | 'genres'>): boolean {
-  return /\brx\b|hentai/i.test(item.ageRating)
-    || item.genres.some((genre) => /^(hentai|erotica)$/i.test(genre));
 }
 
 async function anilistRequest(query: string, variables: Record<string, unknown>, signal?: AbortSignal): Promise<AniListResponse> {
@@ -125,6 +122,7 @@ function mapAnime(media: AniListMedia): AnimeTitle {
     score: media.averageScore ? media.averageScore / 10 : 0,
     ageRating: media.isAdult ? 'R+' : 'Not rated',
     genres: media.genres ?? [],
+    format: media.format ?? null,
     episodes: media.episodes ?? 0,
     status: media.status ?? 'Unknown',
     malUrl: malId ? `https://myanimelist.net/anime/${malId}` : '',
@@ -133,10 +131,10 @@ function mapAnime(media: AniListMedia): AnimeTitle {
 }
 
 const ANIME_PAGE_QUERY = `
-  query ($page: Int, $perPage: Int, $genre: String, $sort: [MediaSort], $isAdult: Boolean, $startDate: FuzzyDateInt, $endDate: FuzzyDateInt) {
+  query ($page: Int, $perPage: Int, $genre: [String], $sort: [MediaSort], $format: MediaFormat, $startDate: FuzzyDateInt, $endDate: FuzzyDateInt) {
     Page(page: $page, perPage: $perPage) {
       pageInfo { total perPage currentPage lastPage hasNextPage }
-      media(type: ANIME, genre: $genre, sort: $sort, isAdult: $isAdult, startDate_greater: $startDate, endDate_lesser: $endDate) {
+      media(type: ANIME, genre_in: $genre, sort: $sort, format: $format, startDate_greater: $startDate, endDate_lesser: $endDate) {
         id
         idMal
         title { english romaji native }
@@ -148,6 +146,7 @@ const ANIME_PAGE_QUERY = `
         episodes
         startDate { year }
         status
+        format
         isAdult
         siteUrl
       }
@@ -178,7 +177,7 @@ const ANIME_MEDIA_QUERY = `
 const ANIME_SEARCH_QUERY = `
   query ($query: String, $perPage: Int) {
     Page(perPage: $perPage) {
-      media(search: $query, type: ANIME, isAdult: false) {
+      media(search: $query, type: ANIME) {
         id
         idMal
         title { english romaji native }
@@ -208,9 +207,9 @@ export async function discoverAnime(
   const variables: Record<string, unknown> = {
     page,
     perPage,
-    genre: filters.genreId ?? undefined,
+    genre: filters.genreIds.length ? filters.genreIds : undefined,
     sort,
-    isAdult: false,
+    format: filters.format ?? undefined,
     startDate: year ? `${year}0101` : undefined,
     endDate: year ? `${year}1231` : undefined,
   };
@@ -218,12 +217,8 @@ export async function discoverAnime(
   const result = await anilistRequest(ANIME_PAGE_QUERY, variables, signal);
   const pageInfo = result.data?.Page?.pageInfo;
   const media = result.data?.Page?.media ?? [];
-  const safeAnime = media.filter((anime) => !isExplicitAnimeTitle({
-    ageRating: anime.isAdult ? 'R+' : 'Not rated',
-    genres: anime.genres,
-  }));
 
-  const malIds = safeAnime.map(({ idMal }) => idMal).filter((id): id is number => typeof id === 'number');
+  const malIds = media.map(({ idMal }) => idMal).filter((id): id is number => typeof id === 'number');
   let availability = new Map<number, boolean>();
   const warnings: string[] = [];
   try {
@@ -234,7 +229,7 @@ export async function discoverAnime(
   }
 
   return {
-    items: safeAnime.map((anime) => {
+    items: media.map((anime) => {
       const item = mapAnime(anime);
       return { ...item, aniPmAvailable: availability.get(item.malId) };
     }),
@@ -268,9 +263,6 @@ export async function getAnimeDetails(malId: number): Promise<AnimeDetailsResult
   if (!media) {
     throw new Error('Anime not found.');
   }
-  if (media.isAdult) {
-    throw new Error('Explicit hentai titles are not available in the anime section.');
-  }
   const warnings: string[] = [];
   let availability: Map<number, boolean>;
   try {
@@ -288,12 +280,8 @@ export async function getAnimeDetails(malId: number): Promise<AnimeDetailsResult
 export async function searchAnime(query: string, signal?: AbortSignal): Promise<AnimeTitlesResult> {
   const result = await anilistRequest(ANIME_SEARCH_QUERY, { query, perPage: 24 }, signal);
   const media = result.data?.Page?.media ?? [];
-  const safeAnime = media.filter((anime) => !isExplicitAnimeTitle({
-    ageRating: anime.isAdult ? 'R+' : 'Not rated',
-    genres: anime.genres,
-  }));
 
-  const malIds = safeAnime.map(({ idMal }) => idMal).filter((id): id is number => typeof id === 'number');
+  const malIds = media.map(({ idMal }) => idMal).filter((id): id is number => typeof id === 'number');
   let availability = new Map<number, boolean>();
   const warnings: string[] = [];
   try {
@@ -304,7 +292,7 @@ export async function searchAnime(query: string, signal?: AbortSignal): Promise<
   }
 
   return {
-    items: safeAnime.map((anime) => {
+    items: media.map((anime) => {
       const item = mapAnime(anime);
       return { ...item, aniPmAvailable: availability.get(item.malId) };
     }),

@@ -84,6 +84,7 @@ export interface AnimeTitle {
   score: number;
   ageRating: string;
   genres: string[];
+  format?: string | null;
   episodes: number;
   status: string;
   malUrl: string;

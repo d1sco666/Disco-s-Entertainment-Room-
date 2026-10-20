@@ -4,19 +4,30 @@ import { useAnimeDiscovery } from '../../hooks/useAnime';
 import { AnimeCard } from './AnimeCard';
 import { SkeletonCard } from '../ui/Skeleton';
 
+const animeFormats = [
+  { value: 'TV', label: 'TV Show' },
+  { value: 'MOVIE', label: 'Movie' },
+  { value: 'OVA', label: 'OVA' },
+];
+
 export function AnimeBrowser() {
-  const [genreId, setGenreId] = useState('');
+  const [genreIds, setGenreIds] = useState<string[]>([]);
   const [ageRating, setAgeRating] = useState('');
   const [sortBy, setSortBy] = useState<'popular' | 'top_rated'>('popular');
   const [year, setYear] = useState('');
+  const [format, setFormat] = useState('');
   const [providerId, setProviderId] = useState('');
+  const filtersActive = genreIds.length > 0 || ageRating !== '' || format !== '' || year !== '';
   const filters = useMemo(() => ({
-    genreId: genreId || null,
+    genreIds,
     ageRating,
     sortBy,
     year: year ? Number(year) : null,
-  }), [ageRating, genreId, sortBy, year]);
-  const { items, loading, loadingMore, error, aniListWarning, hasMore, loadMore } = useAnimeDiscovery(filters);
+    format: format || null,
+  }), [ageRating, genreIds, sortBy, year, format]);
+  const { items, loading, loadingMore, error, aniListWarning, hasMore, loadMore } = filtersActive
+    ? useAnimeDiscovery(filters)
+    : { items: [], loading: false, loadingMore: false, error: null, aniListWarning: null, hasMore: false, loadMore: () => {} };
   const visibleItems = providerId === 'ani.pm'
     ? items.filter((item) => item.aniPmAvailable !== false)
     : items;
@@ -26,19 +37,41 @@ export function AnimeBrowser() {
     <section aria-labelledby="anime-browser-title" className="mb-8">
       <div className="mb-5">
         <h2 id="anime-browser-title" className="text-2xl font-bold text-dark-100">Browse Anime</h2>
-        <p className="mt-1 text-sm text-dark-400">Filter MAL’s anime catalog by genre, rating, Ani.pm availability, year, and score.</p>
+        <p className="mt-1 text-sm text-dark-400">Choose filters below to browse the AniList anime catalog by genre, format, rating, and year.</p>
       </div>
+
+      {!filtersActive && (
+        <div className="mb-6 rounded-xl border border-dark-700 bg-dark-900 p-6 text-center">
+          <p className="text-dark-400">No results shown yet. Select one or more genres, a format, age rating, or year to start browsing anime.</p>
+        </div>
+      )}
 
       <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
         <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
           Genre
           <select
-            value={genreId}
-            onChange={(event) => setGenreId(event.target.value)}
+            multiple
+            value={genreIds}
+            onChange={(event) => setGenreIds(Array.from(event.target.selectedOptions, (option) => option.value))}
             className="w-full border border-dark-600 bg-dark-800 px-3 py-2.5 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="">All genres</option>
-            {animeGenres.map((genre) => <option key={genre.id} value={genre.id}>{genre.name}</option>)}
+            {animeGenres.map((genre) => (
+              <option key={genre.id} value={genre.id}>{genre.name}</option>
+            ))}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
+          Format
+          <select
+            value={format}
+            onChange={(event) => setFormat(event.target.value)}
+            className="w-full border border-dark-600 bg-dark-800 px-3 py-2.5 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            <option value="">Any format</option>
+            {animeFormats.map((fmt) => (
+              <option key={fmt.value} value={fmt.value}>{fmt.label}</option>
+            ))}
           </select>
         </label>
         <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
@@ -49,7 +82,9 @@ export function AnimeBrowser() {
             className="w-full border border-dark-600 bg-dark-800 px-3 py-2.5 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="">Any age rating</option>
-            {animeAgeRatings.map((rating) => <option key={rating.value} value={rating.value}>{rating.label}</option>)}
+            {animeAgeRatings.map((rating) => (
+              <option key={rating.value} value={rating.value}>{rating.label}</option>
+            ))}
           </select>
         </label>
         <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">

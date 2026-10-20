@@ -1,10 +1,10 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
 import { Image } from '../ui/Image';
 import type { AnimeTitle } from '../../types';
-import { isExplicitAnimeTitle } from '../../services/anime';
 
 interface AnimeCardProps {
   item: AnimeTitle;
@@ -14,7 +14,8 @@ interface AnimeCardProps {
 }
 
 export function AnimeCard({ item, onRemove, removeLabel = 'Remove from anime list', subtitle }: AnimeCardProps) {
-  if (isExplicitAnimeTitle(item)) return null;
+  const [isUnblurred, setIsUnblurred] = useState(false);
+  const isExplicit = item.ageRating === 'R+';
 
   return (
     <Card
@@ -29,7 +30,7 @@ export function AnimeCard({ item, onRemove, removeLabel = 'Remove from anime lis
             src={item.poster}
             alt={`${item.title} poster`}
             fallback="/placeholder-poster.svg"
-            className="h-full w-full object-cover"
+            className={`h-full w-full object-cover transition-all duration-300 ${isExplicit && !isUnblurred ? 'blur-[8px] grayscale' : ''}`}
           />
           <div className="absolute left-2 top-2">
             <Badge variant="primary" size="sm">
@@ -51,6 +52,18 @@ export function AnimeCard({ item, onRemove, removeLabel = 'Remove from anime lis
             <span className="absolute bottom-2 left-2 rounded bg-black/80 px-2 py-1 text-xs text-dark-300">
               Not on Ani.pm
             </span>
+          )}
+          {isExplicit && !isUnblurred && (
+            <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-2">
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setIsUnblurred(true)}
+                className="bg-primary-500 hover:bg-primary-400 text-white px-4 py-2 rounded"
+              >
+                Unblur
+              </Button>
+            </div>
           )}
         </div>
         <CardContent className="flex flex-1 flex-col p-4">
