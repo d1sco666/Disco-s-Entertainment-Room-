@@ -7,9 +7,9 @@ import {
 } from '../services/anime';
 import type { AnimeTitle } from '../types';
 
-export function useAnimeDiscovery(filters: AnimeSearchFilters) {
+export function useAnimeDiscovery(filters: AnimeSearchFilters, enabled: boolean) {
   const [items, setItems] = useState<AnimeTitle[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [aniListWarning, setAniListWarning] = useState<string | null>(null);
@@ -18,6 +18,16 @@ export function useAnimeDiscovery(filters: AnimeSearchFilters) {
   const requestVersion = useRef(0);
 
   useEffect(() => {
+    if (!enabled) {
+      setItems([]);
+      setLoading(false);
+      setError(null);
+      setAniListWarning(null);
+      setPage(1);
+      setHasMore(false);
+      return;
+    }
+
     const version = ++requestVersion.current;
     const controller = new AbortController();
     setItems([]);
@@ -50,7 +60,7 @@ export function useAnimeDiscovery(filters: AnimeSearchFilters) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [filters]);
+  }, [filters, enabled]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || !hasMore) return;

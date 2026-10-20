@@ -1,14 +1,30 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { animeAgeRatings, animeGenres } from '../../services/anime';
 import { useAnimeDiscovery } from '../../hooks/useAnime';
 import { AnimeCard } from './AnimeCard';
 import { SkeletonCard } from '../ui/Skeleton';
+import { Button } from '../ui/Button';
 
 const animeFormats = [
   { value: 'TV', label: 'TV Show' },
   { value: 'MOVIE', label: 'Movie' },
   { value: 'OVA', label: 'OVA' },
 ];
+
+function GenreChip({ genre, active, onToggle }: { genre: { id: string; name: string }; active: boolean; onToggle: (id: string) => void }) {
+  return (
+    <Button
+      type="button"
+      variant={active ? 'primary' : 'default'}
+      size="sm"
+      onClick={() => onToggle(genre.id)}
+      className="whitespace-nowrap hover:scale-[1.02] transition-transform"
+      aria-pressed={active}
+    >
+      {genre.name}
+    </Button>
+  );
+}
 
 export function AnimeBrowser() {
   const [genreIds, setGenreIds] = useState<string[]>([]);
@@ -17,7 +33,11 @@ export function AnimeBrowser() {
   const [year, setYear] = useState('');
   const [format, setFormat] = useState('');
   const [providerId, setProviderId] = useState('');
-  const filtersActive = genreIds.length > 0 || ageRating !== '' || format !== '' || year !== '';
+
+  const toggleGenre = useCallback((id: string) => {
+    setGenreIds((prev) => (prev.includes(id) ? prev.filter((g) => g !== id) : [...prev, id]));
+  }, []);
+
   const filters = useMemo(() => ({
     genreIds,
     ageRating,
@@ -25,9 +45,11 @@ export function AnimeBrowser() {
     year: year ? Number(year) : null,
     format: format || null,
   }), [ageRating, genreIds, sortBy, year, format]);
-  const { items, loading, loadingMore, error, aniListWarning, hasMore, loadMore } = filtersActive
-    ? useAnimeDiscovery(filters)
-    : { items: [], loading: false, loadingMore: false, error: null, aniListWarning: null, hasMore: false, loadMore: () => {} };
+
+  const filtersActive = genreIds.length > 0 || ageRating !== '' || format !== '' || year !== '';
+
+  const { items, loading, loadingMore, error, aniListWarning, hasMore, loadMore } = useAnimeDiscovery(filters, filtersActive);
+
   const visibleItems = providerId === 'ani.pm'
     ? items.filter((item) => item.aniPmAvailable !== false)
     : items;
@@ -46,21 +68,23 @@ export function AnimeBrowser() {
         </div>
       )}
 
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
-        <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
-          Genre
-          <select
-            multiple
-            value={genreIds}
-            onChange={(event) => setGenreIds(Array.from(event.target.selectedOptions, (option) => option.value))}
-            className="w-full border border-dark-600 bg-dark-800 px-3 py-2.5 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">All genres</option>
-            {animeGenres.map((genre) => (
-              <option key={genre.id} value={genre.id}>{genre.name}</option>
-            ))}
-          </select>
-        </label>
+      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="col-span-full">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-dark-300">Genre</label>
+            <div className="flex flex-wrap gap-2">
+              {animeGenres.map((genre) => (
+                <GenreChip
+                  key={genre.id}
+                  genre={genre}
+                  active={genreIds.includes(genre.id)}
+                  onToggle={toggleGenre}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-dark-500 mt-1">Select one or more genres</p>
+          </div>
+        </div>
         <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
           Format
           <select
