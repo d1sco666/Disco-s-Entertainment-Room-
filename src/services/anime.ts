@@ -1,6 +1,6 @@
 import type { AnimeTitle } from '../types';
 
-const ANIKOTO_API_URL = 'https://anikotoapi.site';
+const ANIKOTO_API_URL = '/anime';
 
 export interface AnimeSeriesResult {
   anime: AnimeTitle;
@@ -119,7 +119,7 @@ export async function fetchAnimeSeries(id: string | number, signal?: AbortSignal
   const body = await anikotoGet<{
     ok: boolean;
     data: { anime: unknown; episodes: unknown[] };
-  }>(`/series/${id}`, signal);
+  }>(`/${id}`, signal);
 
   return {
     anime: mapAnimeTitle(body.data.anime),
