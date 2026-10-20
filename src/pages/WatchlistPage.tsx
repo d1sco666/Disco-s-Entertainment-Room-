@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { MediaCard } from '../components/features/MediaCard';
@@ -6,15 +6,25 @@ import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { AnimeCard } from '../components/features/AnimeCard';
 import { useAnimeLibrary } from '../hooks/useAnimeLibrary';
 import { simklAPI } from '../services/simkl';
+import { malAPI } from '../services/mal';
 
 export function WatchlistPage() {
   const { watchlist, watched, removeFromWatchlist, replaceWatchlist, replaceWatched } = useMediaLibrary();
   const animeLibrary = useAnimeLibrary();
   const [connected, setConnected] = useState(simklAPI.isConnected());
+  const [malConnected, setMalConnected] = useState(malAPI.isConnected());
   const [syncing, setSyncing] = useState(false);
+  const [malSyncing, setMalSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const simklRedirectUri = `${window.location.origin}/simkl/callback`;
+  const malRedirectUri = `${window.location.origin}/mal/callback`;
+
+  useEffect(() => {
+    const updateMalStatus = () => setMalConnected(malAPI.isConnected());
+    window.addEventListener('mal-auth-changed', updateMalStatus);
+    return () => window.removeEventListener('mal-auth-changed', updateMalStatus);
+  }, []);
 
   const connect = async () => {
     setError(null);
@@ -22,6 +32,15 @@ export function WatchlistPage() {
       await simklAPI.connect();
     } catch (connectError) {
       setError(connectError instanceof Error ? connectError.message : 'Could not connect to Simkl.');
+    }
+  };
+
+  const connectMal = async () => {
+    setError(null);
+    try {
+      await malAPI.connect();
+    } catch (connectError) {
+      setError(connectError instanceof Error ? connectError.message : 'Could not connect to MyAnimeList.');
     }
   };
 
@@ -49,6 +68,25 @@ export function WatchlistPage() {
       setConnected(simklAPI.isConnected());
     } finally {
       setSyncing(false);
+    }
+  };
+
+  const syncMal = async () => {
+    setMalSyncing(true);
+    setError(null);
+    setSyncMessage(null);
+    try {
+      const list = await malAPI.getAnimeList();
+      animeLibrary.replaceWatchlist(list.watchlist);
+      animeLibrary.replaceWatched(list.watched);
+      setSyncMessage(
+        `MyAnimeList import complete: ${list.watchlist.length} watchlist, ${list.watched.length} watched.`
+      );
+    } catch (syncError) {
+      setError(syncError instanceof Error ? syncError.message : 'MyAnimeList sync failed.');
+      setMalConnected(malAPI.isConnected());
+    } finally {
+      setMalSyncing(false);
     }
   };
 
@@ -116,6 +154,54 @@ export function WatchlistPage() {
         </p>
         {error && <p className="mt-4 text-sm text-red-400" role="alert">{error}</p>}
         {syncMessage && <p className="mt-4 text-sm text-emerald-400" role="status">{syncMessage}</p>}
+      </section>
+      <section className="mb-10 border border-dark-700 bg-dark-950 p-5 mt-6" aria-labelledby="mal-title">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 id="mal-title" className="flex items-center gap-2 text-lg font-semibold text-white">
+              <a href="https://myanimelist.net" target="_blank" rel="noopener noreferrer" aria-label="Visit MyAnimeList">
+                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm4.5-9c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5.67-1.5 1.5-1.5 1.5.67 1.5 1.5zm-7 0c0 .83-.67 1.5-1.5 1.5s-1.5-.67-1.5-1.5.67-1.5 1.5-1.5 1.5.67 1.5 1.5zM12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5z" />
+                </svg>
+                <span>MyAnimeList Sync</span>
+              </a>
+            </h2>
+            <p className="mt-1 text-sm text-dark-400">
+              {malConnected
+                ? 'Connected. Import your MyAnimeList anime watchlist and watched history.'
+                : 'Connect MyAnimeList to import your anime watchlist and watched history.'}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {malConnected ? (
+              <>
+                <Button onClick={syncMal} disabled={malSyncing}>
+                  {malSyncing ? 'Syncing…' : 'Sync MAL list'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    malAPI.disconnect();
+                    setMalConnected(false);
+                  }}
+                >
+                  Disconnect
+                </Button>
+              </>
+            ) : (
+              <Button onClick={connectMal}>Connect MyAnimeList</Button>
+            )}
+          </div>
+        </div>
+        <p className="mt-3 text-xs text-dark-500">
+          Register this exact URI in your MyAnimeList app settings: {' '}
+          <code className="break-all text-dark-300">{malRedirectUri}</code>
+        </p>
+        <p className="mt-2 text-xs text-dark-500">
+          Imported anime are matched to AniList metadata using their MyAnimeList IDs. Completed, watching, on hold, and
+          dropped titles are added to watched; plan-to-watch and watching titles are added to the anime watchlist.
+        </p>
+        {error && <p className="mt-4 text-sm text-red-400" role="alert">{error}</p>}
       </section>
       {watchlist.length === 0 && animeLibrary.watchlist.length === 0 ? (
         <p className="border border-dark-800 bg-black px-6 py-12 text-center text-dark-400">
