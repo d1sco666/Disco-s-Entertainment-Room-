@@ -26,6 +26,19 @@ export function WatchlistPage() {
     return () => window.removeEventListener('mal-auth-changed', updateMalStatus);
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const mal = params.get('mal');
+    if (mal === 'connected') {
+      setMalConnected(true);
+      setSyncMessage('MyAnimeList connected successfully.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (mal === 'error') {
+      setError(params.get('reason') || 'MyAnimeList connection failed.');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
   const connect = async () => {
     setError(null);
     try {
