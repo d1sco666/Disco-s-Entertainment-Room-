@@ -1,26 +1,40 @@
+// anikotoapi.site blocks Cloudflare Worker IPs, so proxy through
+// api.allorigins.win, which forwards the request and adds CORS headers.
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 const ANIKOTO_API_URL = 'https://anikotoapi.site';
-
-const UPSTREAM_HEADERS: HeadersInit = {
-  Accept: 'application/json',
-  'User-Agent':
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
-};
 
 export const onRequestGet = async ({ request }) => {
   const url = new URL(request.url);
   const page = url.searchParams.get('page') ?? '1';
   const perPage = url.searchParams.get('per_page') ?? '20';
 
+  const target = encodeURIComponent(
+    `${ANIKOTO_API_URL}/recent-anime?page=${page}&per_page=${perPage}`,
+  );
+
   try {
-    const response = await fetch(`${ANIKOTO_API_URL}/recent-anime?page=${page}&per_page=${perPage}`, {
-      headers: UPSTREAM_HEADERS,
+    const response = await fetch(`${CORS_PROXY}${target}`, {
+      headers: { Accept: 'application/json' },
     });
 
     const body = await response.text();
 
+    if (!response.ok) {
+      return new Response(body, {
+        status: response.status,
+        headers: {
+          'content-type': 'application/json',
+          'access-control-allow-origin': '*',
+        },
+      });
+    }
+
     if (!body || body.trim().length === 0) {
       return new Response(
-        JSON.stringify({ ok: false, error: `Anikoto API returned empty response (HTTP ${response.status})` }),
+        JSON.stringify({
+          ok: false,
+          error: `Anikoto API returned empty response (HTTP ${response.status})`,
+        }),
         {
           status: 502,
           headers: {

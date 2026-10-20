@@ -1,10 +1,7 @@
+// anikotoapi.site blocks Cloudflare Worker IPs, so proxy through
+// api.allorigins.win, which forwards the request and adds CORS headers.
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 const ANIKOTO_API_URL = 'https://anikotoapi.site';
-
-const UPSTREAM_HEADERS: HeadersInit = {
-  Accept: 'application/json',
-  'User-Agent':
-    'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
-};
 
 export const onRequestGet = async ({ request }) => {
   const url = new URL(request.url);
@@ -12,13 +9,14 @@ export const onRequestGet = async ({ request }) => {
   const page = url.searchParams.get('page') ?? '1';
   const perPage = url.searchParams.get('per_page') ?? '100';
 
-  // The public API has no text search endpoint, so browse recent anime and
-  // filter matches client-side on this edge function.
+  const target = encodeURIComponent(
+    `${ANIKOTO_API_URL}/recent-anime?page=${page}&per_page=${perPage}`,
+  );
+
   try {
-    const response = await fetch(
-      `${ANIKOTO_API_URL}/recent-anime?page=${page}&per_page=${perPage}`,
-      { headers: UPSTREAM_HEADERS },
-    );
+    const response = await fetch(`${CORS_PROXY}${target}`, {
+      headers: { Accept: 'application/json' },
+    });
     const body = await response.text();
     if (!response.ok) {
       return new Response(body, {
