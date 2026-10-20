@@ -15,7 +15,7 @@ interface AnimeCardProps {
 
 export function AnimeCard({ item, onRemove, removeLabel = 'Remove from anime list', subtitle }: AnimeCardProps) {
   const [isUnblurred, setIsUnblurred] = useState(false);
-  const isExplicit = item.ageRating === 'R';
+  const isExplicit = item.rating === 'R';
 
   return (
     <Card
@@ -43,16 +43,11 @@ export function AnimeCard({ item, onRemove, removeLabel = 'Remove from anime lis
               variant="default"
               size="sm"
               className="bg-black/70 text-white"
-              aria-label={`Age rating ${item.ageRating}`}
+              aria-label={`Rating ${item.rating}`}
             >
-              {item.ageRating}
+              {item.rating}
             </Badge>
           </div>
-          {item.aniPmAvailable === false && (
-            <span className="absolute bottom-2 left-2 rounded bg-black/80 px-2 py-1 text-xs text-dark-300">
-              Not on Ani.pm
-            </span>
-          )}
           {isExplicit && !isUnblurred && (
             <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-2">
               <Button

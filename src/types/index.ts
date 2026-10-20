@@ -73,26 +73,28 @@ export interface CineSrcSearchResult {
 
 export interface AnimeTitle {
   id: string;
-  malId?: number;
-  aniListId?: number;
   title: string;
-  titleJapanese: string;
+  alternative?: string;
+  native?: string;
+  slug?: string;
   year: number;
   overview: string;
   poster: string;
-  banner: string;
+  backdrop?: string;
   score: number;
-  ageRating: string;
-  ageRatingGuide?: string;
-  genres: string[];
-  format?: string | null;
-  episodes: number;
   status: string;
-  malUrl?: string;
-  aniListUrl?: string;
-  aniPmAvailable?: boolean;
-  aniPmEpisodes?: { total: number; sub: number; dub: number };
-  aniPmAniListId?: number;
+  season?: string;
+  source?: string;
+  duration?: string;
+  rating?: string;
+  episodes: number;
+  genres: string[];
+  studios?: string[];
+  isSub?: boolean;
+  isDub?: boolean;
+  malId?: number;
+  aniId?: number;
+  sId?: number;
 }
 
 export interface AnimeWatchHistoryItem {

@@ -1,30 +1,31 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  discoverAnime,
-  getAnimeDetails,
-  searchAnime,
-  type AnimeSearchFilters,
+  fetchRecentAnime,
+  fetchAnimeSeries,
+  type AnimeListResult,
+  type AnimeSeriesResult,
 } from '../services/anime';
 import type { AnimeTitle } from '../types';
 
-export function useAnimeDiscovery(filters: AnimeSearchFilters, enabled: boolean) {
+export function useAnimeDiscovery(enabled: boolean, page: number, perPage: number) {
   const [items, setItems] = useState<AnimeTitle[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [kitsuWarning, setKitsuWarning] = useState<string | null>(null);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(false);
+  const [resultPage, setResultPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const requestVersion = useRef(0);
+  const hasMore = resultPage < totalPages;
 
   useEffect(() => {
     if (!enabled) {
       setItems([]);
       setLoading(false);
       setError(null);
-      setKitsuWarning(null);
-      setPage(1);
-      setHasMore(false);
+      setResultPage(1);
+      setTotalPages(1);
+      setTotal(0);
       return;
     }
 
@@ -34,18 +35,15 @@ export function useAnimeDiscovery(filters: AnimeSearchFilters, enabled: boolean)
     setLoading(true);
     setLoadingMore(false);
     setError(null);
-    setKitsuWarning(null);
-    setPage(1);
-    setHasMore(false);
 
     const timer = window.setTimeout(() => {
-      discoverAnime(filters, 1, controller.signal)
-        .then((result) => {
+      fetchRecentAnime(page, perPage, controller.signal)
+        .then((result: AnimeListResult) => {
           if (version !== requestVersion.current) return;
           setItems(result.items);
-          setPage(result.page);
-          setHasMore(result.hasMore);
-          setKitsuWarning(result.warning);
+          setResultPage(result.page);
+          setTotalPages(result.totalPages);
+          setTotal(result.total);
         })
         .catch((requestError: unknown) => {
           if (version !== requestVersion.current || controller.signal.aborted) return;
@@ -60,22 +58,22 @@ export function useAnimeDiscovery(filters: AnimeSearchFilters, enabled: boolean)
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [filters, enabled]);
+  }, [enabled, page, perPage]);
 
   const loadMore = useCallback(async () => {
     if (loading || loadingMore || !hasMore) return;
-    const version = requestVersion.current;
-    const nextPage = page + 1;
+    const nextPage = resultPage + 1;
+    const version = ++requestVersion.current;
     const controller = new AbortController();
     setLoadingMore(true);
     setError(null);
     try {
-      const result = await discoverAnime(filters, nextPage, controller.signal);
+      const result = await fetchRecentAnime(nextPage, perPage, controller.signal);
       if (version !== requestVersion.current) return;
       setItems((current) => [...current, ...result.items]);
-      setPage(result.page);
-      setHasMore(result.hasMore);
-      setKitsuWarning(result.warning);
+      setResultPage(result.page);
+      setTotalPages(result.totalPages);
+      setTotal(result.total);
     } catch (requestError) {
       if (version === requestVersion.current) {
         setError(requestError instanceof Error ? requestError.message : 'Could not load more anime.');
@@ -83,16 +81,15 @@ export function useAnimeDiscovery(filters: AnimeSearchFilters, enabled: boolean)
     } finally {
       if (version === requestVersion.current) setLoadingMore(false);
     }
-  }, [filters, hasMore, loading, loadingMore, page]);
+  }, [loading, loadingMore, hasMore, resultPage, perPage]);
 
-  return { items, loading, loadingMore, error, kitsuWarning, hasMore, loadMore };
+  return { items, loading, loadingMore, error, page: resultPage, totalPages, total, hasMore, loadMore };
 }
 
 export function useAnimeSearch(query: string, enabled: boolean) {
   const [items, setItems] = useState<AnimeTitle[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [warning, setWarning] = useState<string | null>(null);
 
   useEffect(() => {
     const normalizedQuery = query.trim();
@@ -100,19 +97,21 @@ export function useAnimeSearch(query: string, enabled: boolean) {
       setItems([]);
       setLoading(false);
       setError(null);
-      setWarning(null);
       return;
     }
 
     const controller = new AbortController();
     setLoading(true);
     setError(null);
-    setWarning(null);
     const timer = window.setTimeout(() => {
-      searchAnime(normalizedQuery, controller.signal)
+      // The anikotoapi site endpoint does not offer text search, so fall back to
+      // browsing recent anime client-side and filtering by title.
+      fetchRecentAnime(1, 100, controller.signal)
         .then((result) => {
-          setItems(result.items);
-          setWarning(result.warning);
+          const filtered = result.items.filter((item) =>
+            item.title.toLowerCase().includes(normalizedQuery.toLowerCase())
+          );
+          setItems(filtered);
         })
         .catch((searchError: unknown) => {
           if (!controller.signal.aborted) {
@@ -130,23 +129,23 @@ export function useAnimeSearch(query: string, enabled: boolean) {
     };
   }, [query, enabled]);
 
-  return { items, loading, error, warning };
+  return { items, loading, error };
 }
 
 export function useAnimeDetails(id: string | null) {
   const [item, setItem] = useState<AnimeTitle | null>(null);
+  const [episodes, setEpisodes] = useState<AnimeSeriesResult['episodes']>([]);
   const [loading, setLoading] = useState(Boolean(id));
   const [error, setError] = useState<string | null>(null);
-  const [warning, setWarning] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
     if (!id) {
       setItem(null);
+      setEpisodes([]);
       setLoading(false);
       setError(id === null ? null : 'Invalid anime ID.');
-      setWarning(null);
       controller.abort();
       return () => {
         active = false;
@@ -154,14 +153,14 @@ export function useAnimeDetails(id: string | null) {
     }
 
     setItem(null);
+    setEpisodes([]);
     setLoading(true);
     setError(null);
-    setWarning(null);
-    getAnimeDetails(id, controller.signal)
-      .then((result) => {
+    fetchAnimeSeries(id, controller.signal)
+      .then((result: AnimeSeriesResult) => {
         if (active) {
-          setItem(result.item);
-          setWarning(result.warning);
+          setItem(result.anime);
+          setEpisodes(result.episodes);
         }
       })
       .catch((requestError: unknown) => {
@@ -178,5 +177,5 @@ export function useAnimeDetails(id: string | null) {
     };
   }, [id]);
 
-  return { item, loading, error, warning };
+  return { item, episodes, loading, error };
 }

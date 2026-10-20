@@ -129,11 +129,6 @@ export function SearchPage() {
       )}
       {query && activeTab === 'anime' && (
         <section aria-label="Anime search results">
-          {animeResults.warning && (
-            <p className="mb-4 text-sm text-amber-200" role="status">
-              Some Kitsu or Ani.pm metadata could not be loaded. {animeResults.warning}
-            </p>
-          )}
           {animeResults.loading ? (
             <p className="py-10 text-center text-dark-400" role="status">Searching anime…</p>
           ) : animeResults.error ? (

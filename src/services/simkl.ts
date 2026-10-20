@@ -235,7 +235,7 @@ function idKey(media: SavedMedia) {
 }
 
 function animeIdKey(item: AnimeTitle) {
-  return `anime:${item.malId}`;
+  return `anime:${item.malId ?? ''}`;
 }
 
 function animeWatchedKey(item: AnimeWatchHistoryItem) {
@@ -268,7 +268,6 @@ function malId(title: SimklTitle) {
 function makeAnimeIds(item: AnimeTitle) {
   return {
     mal: item.malId,
-    ...(item.aniListId ? { anilist: item.aniListId } : {}),
   };
 }
 
@@ -379,8 +378,8 @@ function readAnimeSnapshot(): AnimeSyncSnapshot | null {
 }
 
 async function loadAnimeDetails(id: string): Promise<AnimeTitle> {
-  const { getAnimeDetails } = await import('./anime');
-  return (await getAnimeDetails(id)).item;
+  const { fetchAnimeSeries } = await import('./anime');
+  return (await fetchAnimeSeries(id)).anime;
 }
 
 function diffRemoved(previous: string[], current: string[]) {

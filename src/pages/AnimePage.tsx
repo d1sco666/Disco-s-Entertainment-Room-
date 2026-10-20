@@ -7,7 +7,7 @@ import { Button } from '../components/ui/Button';
 import { Image } from '../components/ui/Image';
 import { useAnimeDetails } from '../hooks/useAnime';
 import { useAnimeLibrary } from '../hooks/useAnimeLibrary';
-import { getAniPmEmbedUrl } from '../services/anime';
+import { getEpisodeUrl } from '../services/anime';
 
 export function AnimePage() {
   const { id: rawId } = useParams<{ id: string }>();
@@ -18,7 +18,7 @@ export function AnimePage() {
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold text-white">Anime</h1>
-        <p className="text-dark-400">Browse the Kitsu anime catalog and watch episodes on Ani.pm.</p>
+        <p className="text-dark-400">Browse the anime catalog and watch episodes.</p>
       </div>
       <AnimeBrowser />
     </div>
@@ -26,7 +26,7 @@ export function AnimePage() {
 }
 
 function AnimeDetailsPage({ id }: { id: string }) {
-  const { item, loading, error, warning } = useAnimeDetails(id);
+  const { item, episodes, loading, error } = useAnimeDetails(id);
   const { watchlist, toggleWatchlist, markWatched, addToContinueWatching } = useAnimeLibrary();
   const [episode, setEpisode] = useState(1);
   const [language, setLanguage] = useState<'sub' | 'dub'>('sub');
@@ -46,14 +46,13 @@ function AnimeDetailsPage({ id }: { id: string }) {
   }
 
   const isSaved = watchlist.some((saved) => saved.id === item.id);
-  const playbackUnavailable = item.aniPmAvailable === false;
-  // Use the sub/dub counts reported by ani.pm when available, falling back to
-  // the Kitsu episode count.
-  const maxEpisode = item.aniPmEpisodes?.dub ?? item.aniPmEpisodes?.sub ?? item.episodes;
-  const validEpisode = Number.isSafeInteger(episode) && episode >= 1 && episode <= (maxEpisode || 0);
+  const episodeCount = item.episodes || episodes.length || 0;
+  const validEpisode = Number.isSafeInteger(episode) && episode >= 1 && episode <= (episodeCount || 0);
+  const selectedEpisode = episodes.find((ep) => ep.number === episode);
+  const playableUrl = selectedEpisode ? getEpisodeUrl(selectedEpisode, language) : '';
 
   const play = () => {
-    if (playbackUnavailable || !validEpisode) return;
+    if (!validEpisode || !playableUrl) return;
     addToContinueWatching(item, episode);
     setPlayerOpen(true);
   };
@@ -78,11 +77,11 @@ function AnimeDetailsPage({ id }: { id: string }) {
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
                 <Badge variant="primary">★ {item.score ? item.score.toFixed(2) : '—'}</Badge>
-                <Badge variant="default">{item.ageRating}</Badge>
+                <Badge variant="default">{item.rating}</Badge>
                 <Badge variant="default">{item.status}</Badge>
               </div>
               <h1 className="text-3xl font-bold text-white">{item.title}</h1>
-              {item.titleJapanese && <p className="text-dark-400">{item.titleJapanese}</p>}
+              {item.alternative && <p className="text-dark-400">{item.alternative}</p>}
               <p className="text-sm text-dark-400">
                 {item.year || 'Year unknown'} · {item.episodes ? `${item.episodes} episodes` : 'Episode count unknown'}
               </p>
@@ -90,78 +89,88 @@ function AnimeDetailsPage({ id }: { id: string }) {
                 {item.genres.map((genre) => <Badge key={genre} variant="default">{genre}</Badge>)}
               </div>
               <p className="whitespace-pre-line leading-relaxed text-dark-300">{item.overview || 'No synopsis available.'}</p>
-              {warning && (
-                <p className="rounded-lg border border-amber-800 bg-amber-950/40 p-3 text-sm text-amber-200" role="status">
-                  Some Kitsu, AniList, or Ani.pm metadata could not be loaded. Playback can still use the MyAnimeList ID. {warning}
-                </p>
-              )}
               <div className="flex flex-wrap gap-3">
-                <Button onClick={play} disabled={playbackUnavailable || !validEpisode}>
-                  {playbackUnavailable ? 'Not available on Ani.pm' : 'Watch on Ani.pm'}
+                <Button onClick={play} disabled={!validEpisode || !playableUrl}>
+                  {validEpisode && playableUrl ? 'Watch Episode' : 'Episode not playable'}
                 </Button>
                 <Button variant="outline" aria-pressed={isSaved} onClick={() => toggleWatchlist(item)}>
                   {isSaved ? 'Remove from Anime Watchlist' : 'Add to Anime Watchlist'}
                 </Button>
                 <Button variant="outline" onClick={() => markWatched(item)}>Mark as Watched</Button>
               </div>
-              {item.aniListUrl && (
-                <a href={item.aniListUrl} target="_blank" rel="noopener noreferrer" className="mr-4 text-sm text-primary-400 hover:underline">
-                  View AniList entry
+              {item.slug && (
+                <a
+                  href={`https://anikototv.to/anime/${item.slug}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-primary-400 hover:underline"
+                >
+                  View on Anikoto
                 </a>
               )}
-              <a href={item.malUrl} target="_blank" rel="noopener noreferrer" className="text-sm text-primary-400 hover:underline">
-                View MyAnimeList entry
-              </a>
             </div>
           </div>
         </section>
 
         <aside className="space-y-4 rounded-xl border border-dark-700 bg-dark-900 p-5">
-          <h2 className="text-lg font-semibold text-white">Ani.pm Player</h2>
-          <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
-            Episode
-            <input
-              type="number"
-              min={1}
-              max={maxEpisode || undefined}
-              value={episode}
-              onChange={(event) => setEpisode(Number(event.target.value))}
-              className="border border-dark-600 bg-dark-800 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-          </label>
-          <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
-            Audio
-            <select
-              value={language}
-              onChange={(event) => setLanguage(event.target.value === 'dub' ? 'dub' : 'sub')}
-              className="border border-dark-600 bg-dark-800 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
-              <option value="sub">Subbed</option>
-              <option value="dub">Dubbed</option>
-            </select>
-          </label>
-          <Button onClick={play} disabled={playbackUnavailable || !validEpisode}>
-            Play Episode
-          </Button>
-          <p className="text-xs text-dark-500">
-            Episodes and playback come from Ani.pm, using MyAnimeList/AniList IDs only for that lookup.
-          </p>
+          <h2 className="text-lg font-semibold text-white">Player</h2>
+          {episodes.length === 0 && (
+            <p className="text-sm text-dark-400">No episodes available for this title.</p>
+          )}
+          {episodes.length > 0 && (
+            <>
+              <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
+                Episode
+                <select
+                  value={episode}
+                  onChange={(event) => setEpisode(Number(event.target.value))}
+                  className="border border-dark-600 bg-dark-800 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  {episodes.map((ep) => (
+                    <option key={ep.id} value={ep.number}>
+                      Episode {ep.number}{ep.title ? ` · ${ep.title}` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
+                Audio
+                <select
+                  value={language}
+                  onChange={(event) => setLanguage(event.target.value === 'dub' ? 'dub' : 'sub')}
+                  className="border border-dark-600 bg-dark-800 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                  <option value="sub">Subbed</option>
+                  <option value="dub">Dubbed</option>
+                </select>
+              </label>
+              <Button onClick={play} disabled={!validEpisode || !playableUrl}>
+                Play Episode
+              </Button>
+              {!playableUrl && validEpisode && (
+                <p className="text-xs text-red-400">No playable link for the selected language.</p>
+              )}
+              <p className="text-xs text-dark-500">
+                Playback links come from the Anikoto API.
+              </p>
+            </>
+          )}
         </aside>
       </div>
 
-      {playerOpen && (
+      {playerOpen && playableUrl && selectedEpisode && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4"
           role="dialog"
           aria-modal="true"
-          aria-label={`${item.title} episode ${episode} on Ani.pm`}
+          aria-label={`${item.title} episode ${episode}`}
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setPlayerOpen(false);
           }}
         >
           <div className="relative aspect-video w-full max-w-5xl">
             <VideoPlayer
-              src={getAniPmEmbedUrl(item, episode, language)}
+              src={playableUrl}
               title={`${item.title} episode ${episode}`}
             />
             <button
