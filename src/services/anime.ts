@@ -1,5 +1,9 @@
 import type { AnimeTitle } from '../types';
 
+// anikotoapi.site blocks Cloudflare Worker IPs and sends no CORS headers,
+// so route through api.allorigins.win from the client. It forwards to the
+// upstream and returns CORS-enabled responses the browser can read.
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
 const ANIKOTO_API_URL = 'https://anikotoapi.site';
 
 export interface AnimeSeriesResult {
@@ -72,7 +76,8 @@ function mapAnimeEpisode(raw: unknown): AnimeEpisode {
 }
 
 async function anikotoGet<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(`${ANIKOTO_API_URL}${path}`, { signal });
+  const target = encodeURIComponent(`${ANIKOTO_API_URL}${path}`);
+  const response = await fetch(`${CORS_PROXY}${target}`, { signal });
   const text = await response.text();
   let body: unknown = null;
   if (text) {
