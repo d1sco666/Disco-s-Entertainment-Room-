@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { classNames } from '@/utils/helpers';
 import { simklAPI } from '@/services/simkl';
-import { malAPI } from '@/services/mal';
 
 export function Header() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -12,9 +11,7 @@ export function Header() {
   const [showMenu, setShowMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [simklConnected, setSimklConnected] = useState(simklAPI.isConnected());
-  const [malConnected, setMalConnected] = useState(malAPI.isConnected());
   const [simklLoginError, setSimklLoginError] = useState<string | null>(null);
-  const [malLoginError, setMalLoginError] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -28,12 +25,6 @@ export function Header() {
     const updateSimklStatus = () => setSimklConnected(simklAPI.isConnected());
     window.addEventListener('simkl-auth-changed', updateSimklStatus);
     return () => window.removeEventListener('simkl-auth-changed', updateSimklStatus);
-  }, []);
-
-  useEffect(() => {
-    const updateMalStatus = () => setMalConnected(malAPI.isConnected());
-    window.addEventListener('mal-auth-changed', updateMalStatus);
-    return () => window.removeEventListener('mal-auth-changed', updateMalStatus);
   }, []);
 
   useEffect(() => {
@@ -55,15 +46,6 @@ export function Header() {
       await simklAPI.connect();
     } catch (error) {
       setSimklLoginError(error instanceof Error ? error.message : 'Could not connect to Simkl.');
-    }
-  };
-
-  const handleMalLogin = async () => {
-    setMalLoginError(null);
-    try {
-      await malAPI.connect();
-    } catch (error) {
-      setMalLoginError(error instanceof Error ? error.message : 'Could not connect to MyAnimeList.');
     }
   };
 
@@ -124,15 +106,6 @@ export function Header() {
             ) : (
               <Button size="sm" className="hidden sm:inline-flex" onClick={handleSimklLogin}>
                 Sign in with Simkl
-              </Button>
-            )}
-            {malConnected ? (
-              <Link to="/watchlist" className="hidden sm:block px-3 py-2 text-sm font-medium text-emerald-400 hover:bg-dark-800">
-                MAL connected
-              </Link>
-            ) : (
-              <Button size="sm" className="hidden sm:inline-flex" onClick={handleMalLogin}>
-                Sign in with MAL
               </Button>
             )}
             <Button
@@ -209,25 +182,11 @@ export function Header() {
                   Sign in with Simkl
                 </button>
               )}
-              {malConnected ? (
-                <Link to="/watchlist" className="rounded-lg px-3 py-2 text-sm font-medium text-emerald-400 hover:bg-dark-800">MAL connected</Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleMalLogin}
-                  className="rounded-lg px-3 py-2 text-left text-sm font-medium text-primary-400 hover:bg-dark-800"
-                >
-                  Sign in with MyAnimeList
-                </button>
-              )}
             </nav>
           </div>
         )}
         {simklLoginError && (
           <p className="pb-3 text-right text-xs text-red-400" role="alert">{simklLoginError}</p>
-        )}
-        {malLoginError && (
-          <p className="pb-3 text-right text-xs text-red-400" role="alert">{malLoginError}</p>
         )}
       </nav>
     </header>

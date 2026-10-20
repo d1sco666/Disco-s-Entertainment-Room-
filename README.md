@@ -1,6 +1,6 @@
 # Entertainment Room
 
-A personal movie, TV, and anime discovery website using **TMDB**, **MyAnimeList**, and **AniList** for title metadata, embedded players for video, and **Simkl** for optional watchlist and watched-history sync.
+A personal movie, TV, and anime discovery website using **TMDB** and **AniList** for title metadata, embedded players for video, and **Simkl** for optional watchlist and watched-history sync.
 
 ## Features
 
@@ -19,7 +19,7 @@ A personal movie, TV, and anime discovery website using **TMDB**, **MyAnimeList*
 - **State Management**: React hooks
 - **Routing**: React Router v7
 - **Video Player**: Vimeus, CineSrc, Vidstuck, and Zxcstream
-- **Metadata APIs**: TMDB, MyAnimeList via Jikan, and AniList
+- **Metadata APIs**: TMDB and AniList
 - **Library Sync**: Simkl OAuth 2.0 (PKCE)
 - **Authentication**: Auth0 SPA SDK
 - **Build and lint**: Vite 6 and ESLint 9
