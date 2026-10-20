@@ -104,7 +104,7 @@ export async function fetchRecentAnime(
     ok: boolean;
     data: unknown[];
     pagination: { page: number; per_page: number; total: number; total_pages: number };
-  }>(`/recent-anime?page=${page}&per_page=${perPage}`, signal);
+  }>(`/recent?page=${page}&per_page=${perPage}`, signal);
 
   return {
     items: (body.data ?? []).map(mapAnimeTitle),
