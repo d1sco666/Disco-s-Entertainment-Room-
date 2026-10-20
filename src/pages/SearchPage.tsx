@@ -131,7 +131,7 @@ export function SearchPage() {
         <section aria-label="Anime search results">
           {animeResults.warning && (
             <p className="mb-4 text-sm text-amber-200" role="status">
-              Some AniList or Ani.pm metadata could not be loaded. {animeResults.warning}
+              Some Kitsu or Ani.pm metadata could not be loaded. {animeResults.warning}
             </p>
           )}
           {animeResults.loading ? (
@@ -144,7 +144,7 @@ export function SearchPage() {
             <p className="py-10 text-center text-dark-400">No anime found for “{query}”.</p>
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
-              {animeResults.items.map((item) => <AnimeCard key={item.malId} item={item} />)}
+              {animeResults.items.map((item) => <AnimeCard key={item.id} item={item} />)}
             </div>
           )}
         </section>

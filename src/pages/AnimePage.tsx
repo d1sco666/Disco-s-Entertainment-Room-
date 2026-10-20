@@ -10,25 +10,23 @@ import { useAnimeLibrary } from '../hooks/useAnimeLibrary';
 import { getAniPmEmbedUrl } from '../services/anime';
 
 export function AnimePage() {
-  const { malId: rawMalId } = useParams<{ malId: string }>();
-  const parsedMalId = Number(rawMalId);
-  const malId = Number.isSafeInteger(parsedMalId) && parsedMalId > 0 ? parsedMalId : null;
+  const { id: rawId } = useParams<{ id: string }>();
 
-  if (rawMalId) return <AnimeDetailsPage key={rawMalId} malId={malId} />;
+  if (rawId) return <AnimeDetailsPage key={rawId} id={rawId} />;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-8">
         <h1 className="mb-2 text-3xl font-bold text-white">Anime</h1>
-        <p className="text-dark-400">Discover anime from MyAnimeList and AniList, and watch with Ani.pm.</p>
+        <p className="text-dark-400">Browse the Kitsu anime catalog and watch episodes on Ani.pm.</p>
       </div>
       <AnimeBrowser />
     </div>
   );
 }
 
-function AnimeDetailsPage({ malId }: { malId: number | null }) {
-  const { item, loading, error, warning } = useAnimeDetails(malId);
+function AnimeDetailsPage({ id }: { id: string }) {
+  const { item, loading, error, warning } = useAnimeDetails(id);
   const { watchlist, toggleWatchlist, markWatched, addToContinueWatching } = useAnimeLibrary();
   const [episode, setEpisode] = useState(1);
   const [language, setLanguage] = useState<'sub' | 'dub'>('sub');
@@ -47,11 +45,12 @@ function AnimeDetailsPage({ malId }: { malId: number | null }) {
     );
   }
 
-  const isSaved = watchlist.some((saved) => saved.malId === item.malId);
+  const isSaved = watchlist.some((saved) => saved.id === item.id);
   const playbackUnavailable = item.aniPmAvailable === false;
-  const validEpisode = Number.isSafeInteger(episode)
-    && episode >= 1
-    && (!item.episodes || episode <= item.episodes);
+  // Use the sub/dub counts reported by ani.pm when available, falling back to
+  // the Kitsu episode count.
+  const maxEpisode = item.aniPmEpisodes?.dub ?? item.aniPmEpisodes?.sub ?? item.episodes;
+  const validEpisode = Number.isSafeInteger(episode) && episode >= 1 && episode <= (maxEpisode || 0);
 
   const play = () => {
     if (playbackUnavailable || !validEpisode) return;
@@ -93,7 +92,7 @@ function AnimeDetailsPage({ malId }: { malId: number | null }) {
               <p className="whitespace-pre-line leading-relaxed text-dark-300">{item.overview || 'No synopsis available.'}</p>
               {warning && (
                 <p className="rounded-lg border border-amber-800 bg-amber-950/40 p-3 text-sm text-amber-200" role="status">
-                  Some AniList or Ani.pm data could not be loaded. Playback can still use the MyAnimeList ID. {warning}
+                  Some Kitsu, AniList, or Ani.pm metadata could not be loaded. Playback can still use the MyAnimeList ID. {warning}
                 </p>
               )}
               <div className="flex flex-wrap gap-3">
@@ -124,7 +123,7 @@ function AnimeDetailsPage({ malId }: { malId: number | null }) {
             <input
               type="number"
               min={1}
-              max={item.episodes || undefined}
+              max={maxEpisode || undefined}
               value={episode}
               onChange={(event) => setEpisode(Number(event.target.value))}
               className="border border-dark-600 bg-dark-800 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
@@ -145,7 +144,7 @@ function AnimeDetailsPage({ malId }: { malId: number | null }) {
             Play Episode
           </Button>
           <p className="text-xs text-dark-500">
-            Player IDs use AniList when linked, with MyAnimeList as fallback.
+            Episodes and playback come from Ani.pm, using MyAnimeList/AniList IDs only for that lookup.
           </p>
         </aside>
       </div>

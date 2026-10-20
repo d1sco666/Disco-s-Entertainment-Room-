@@ -43,9 +43,9 @@ export function WatchedPage() {
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
             {animeLibrary.watched.map(({ item }) => (
               <AnimeCard
-                key={item.malId}
+                key={item.id}
                 item={item}
-                onRemove={() => animeLibrary.removeFromWatched(item.malId)}
+                onRemove={() => animeLibrary.removeFromWatched(item.id)}
                 removeLabel="Remove from watched anime"
               />
             ))}

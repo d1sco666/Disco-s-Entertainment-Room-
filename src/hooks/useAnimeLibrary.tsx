@@ -11,11 +11,11 @@ interface AnimeLibraryValue {
   continueWatching: AnimeContinueWatchingItem[];
   storageError: string | null;
   toggleWatchlist: (item: AnimeTitle) => void;
-  removeFromWatchlist: (malId: number) => void;
+  removeFromWatchlist: (id: string) => void;
   markWatched: (item: AnimeTitle) => void;
-  removeFromWatched: (malId: number) => void;
+  removeFromWatched: (id: string) => void;
   addToContinueWatching: (item: AnimeTitle, episode: number) => void;
-  removeFromContinueWatching: (malId: number) => void;
+  removeFromContinueWatching: (id: string) => void;
   replaceWatchlist: (items: AnimeTitle[]) => void;
   replaceWatched: (items: AnimeWatchHistoryItem[]) => void;
 }
@@ -26,7 +26,7 @@ function validAnimeTitle(value: unknown): value is AnimeTitle {
   if (!value || typeof value !== 'object') return false;
   const item = value as Record<string, unknown>;
   return typeof item.id === 'string'
-    && typeof item.malId === 'number'
+    && (typeof item.malId === 'number' || item.malId === undefined)
     && typeof item.title === 'string'
     && typeof item.titleJapanese === 'string'
     && typeof item.year === 'number'
@@ -110,27 +110,27 @@ export function AnimeLibraryProvider({ children }: { children: ReactNode }) {
   }, [continueWatching]);
 
   const toggleWatchlist = useCallback((item: AnimeTitle) => {
-    setWatchlist((current) => current.some((entry) => entry.malId === item.malId)
-      ? current.filter((entry) => entry.malId !== item.malId)
+    setWatchlist((current) => current.some((entry) => entry.id === item.id)
+      ? current.filter((entry) => entry.id !== item.id)
       : [item, ...current]);
   }, []);
-  const removeFromWatchlist = useCallback((malId: number) => {
-    setWatchlist((current) => current.filter((item) => item.malId !== malId));
+  const removeFromWatchlist = useCallback((id: string) => {
+    setWatchlist((current) => current.filter((item) => item.id !== id));
   }, []);
   const markWatched = useCallback((item: AnimeTitle) => {
-    setWatched((current) => [{ item, watchedAt: Date.now() }, ...current.filter((entry) => entry.item.malId !== item.malId)]);
+    setWatched((current) => [{ item, watchedAt: Date.now() }, ...current.filter((entry) => entry.item.id !== item.id)]);
   }, []);
-  const removeFromWatched = useCallback((malId: number) => {
-    setWatched((current) => current.filter((entry) => entry.item.malId !== malId));
+  const removeFromWatched = useCallback((id: string) => {
+    setWatched((current) => current.filter((entry) => entry.item.id !== id));
   }, []);
   const addToContinueWatching = useCallback((item: AnimeTitle, episode: number) => {
     setContinueWatching((current) => [
       { item, episode, lastWatchedAt: Date.now() },
-      ...current.filter((entry) => entry.item.malId !== item.malId),
+      ...current.filter((entry) => entry.item.id !== item.id),
     ]);
   }, []);
-  const removeFromContinueWatching = useCallback((malId: number) => {
-    setContinueWatching((current) => current.filter((entry) => entry.item.malId !== malId));
+  const removeFromContinueWatching = useCallback((id: string) => {
+    setContinueWatching((current) => current.filter((entry) => entry.item.id !== id));
   }, []);
   const replaceWatchlist = useCallback((items: AnimeTitle[]) => setWatchlist(items), []);
   const replaceWatched = useCallback((items: AnimeWatchHistoryItem[]) => setWatched(items), []);

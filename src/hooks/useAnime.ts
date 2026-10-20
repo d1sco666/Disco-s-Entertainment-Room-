@@ -12,7 +12,7 @@ export function useAnimeDiscovery(filters: AnimeSearchFilters, enabled: boolean)
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [aniListWarning, setAniListWarning] = useState<string | null>(null);
+  const [kitsuWarning, setKitsuWarning] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const requestVersion = useRef(0);
@@ -22,7 +22,7 @@ export function useAnimeDiscovery(filters: AnimeSearchFilters, enabled: boolean)
       setItems([]);
       setLoading(false);
       setError(null);
-      setAniListWarning(null);
+      setKitsuWarning(null);
       setPage(1);
       setHasMore(false);
       return;
@@ -34,7 +34,7 @@ export function useAnimeDiscovery(filters: AnimeSearchFilters, enabled: boolean)
     setLoading(true);
     setLoadingMore(false);
     setError(null);
-    setAniListWarning(null);
+    setKitsuWarning(null);
     setPage(1);
     setHasMore(false);
 
@@ -45,7 +45,7 @@ export function useAnimeDiscovery(filters: AnimeSearchFilters, enabled: boolean)
           setItems(result.items);
           setPage(result.page);
           setHasMore(result.hasMore);
-          setAniListWarning(result.aniListWarning);
+          setKitsuWarning(result.warning);
         })
         .catch((requestError: unknown) => {
           if (version !== requestVersion.current || controller.signal.aborted) return;
@@ -75,7 +75,7 @@ export function useAnimeDiscovery(filters: AnimeSearchFilters, enabled: boolean)
       setItems((current) => [...current, ...result.items]);
       setPage(result.page);
       setHasMore(result.hasMore);
-      setAniListWarning(result.aniListWarning);
+      setKitsuWarning(result.warning);
     } catch (requestError) {
       if (version === requestVersion.current) {
         setError(requestError instanceof Error ? requestError.message : 'Could not load more anime.');
@@ -85,7 +85,7 @@ export function useAnimeDiscovery(filters: AnimeSearchFilters, enabled: boolean)
     }
   }, [filters, hasMore, loading, loadingMore, page]);
 
-  return { items, loading, loadingMore, error, aniListWarning, hasMore, loadMore };
+  return { items, loading, loadingMore, error, kitsuWarning, hasMore, loadMore };
 }
 
 export function useAnimeSearch(query: string, enabled: boolean) {
@@ -133,19 +133,21 @@ export function useAnimeSearch(query: string, enabled: boolean) {
   return { items, loading, error, warning };
 }
 
-export function useAnimeDetails(malId: number | null) {
+export function useAnimeDetails(id: string | null) {
   const [item, setItem] = useState<AnimeTitle | null>(null);
-  const [loading, setLoading] = useState(Boolean(malId));
+  const [loading, setLoading] = useState(Boolean(id));
   const [error, setError] = useState<string | null>(null);
   const [warning, setWarning] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
-    if (!malId || !Number.isSafeInteger(malId) || malId < 1) {
+    const controller = new AbortController();
+    if (!id) {
       setItem(null);
       setLoading(false);
-      setError(malId === null ? null : 'Invalid MyAnimeList ID.');
+      setError(id === null ? null : 'Invalid anime ID.');
       setWarning(null);
+      controller.abort();
       return () => {
         active = false;
       };
@@ -155,7 +157,7 @@ export function useAnimeDetails(malId: number | null) {
     setLoading(true);
     setError(null);
     setWarning(null);
-    getAnimeDetails(malId)
+    getAnimeDetails(id, controller.signal)
       .then((result) => {
         if (active) {
           setItem(result.item);
@@ -163,15 +165,18 @@ export function useAnimeDetails(malId: number | null) {
         }
       })
       .catch((requestError: unknown) => {
-        if (active) setError(requestError instanceof Error ? requestError.message : 'Could not load anime details.');
+        if (active && !controller.signal.aborted) {
+          setError(requestError instanceof Error ? requestError.message : 'Could not load anime details.');
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
       });
     return () => {
       active = false;
+      controller.abort();
     };
-  }, [malId]);
+  }, [id]);
 
   return { item, loading, error, warning };
 }

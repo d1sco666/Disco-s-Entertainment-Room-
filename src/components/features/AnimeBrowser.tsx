@@ -9,6 +9,9 @@ const animeFormats = [
   { value: 'TV', label: 'TV Show' },
   { value: 'MOVIE', label: 'Movie' },
   { value: 'OVA', label: 'OVA' },
+  { value: 'ONA', label: 'ONA' },
+  { value: 'SPECIAL', label: 'Special' },
+  { value: 'MUSIC', label: 'Music' },
 ];
 
 function GenreChip({ genre, active, onToggle }: { genre: { id: string; name: string }; active: boolean; onToggle: (id: string) => void }) {
@@ -46,9 +49,7 @@ export function AnimeBrowser() {
     format: format || null,
   }), [ageRating, genreIds, sortBy, year, format]);
 
-  const filtersActive = genreIds.length > 0 || ageRating !== '' || format !== '' || year !== '';
-
-  const { items, loading, loadingMore, error, aniListWarning, hasMore, loadMore } = useAnimeDiscovery(filters, filtersActive);
+  const { items, loading, loadingMore, error, kitsuWarning, hasMore, loadMore } = useAnimeDiscovery(filters, true);
 
   const visibleItems = providerId === 'ani.pm'
     ? items.filter((item) => item.aniPmAvailable !== false)
@@ -59,14 +60,8 @@ export function AnimeBrowser() {
     <section aria-labelledby="anime-browser-title" className="mb-8">
       <div className="mb-5">
         <h2 id="anime-browser-title" className="text-2xl font-bold text-dark-100">Browse Anime</h2>
-        <p className="mt-1 text-sm text-dark-400">Choose filters below to browse the AniList anime catalog by genre, format, rating, and year.</p>
+        <p className="mt-1 text-sm text-dark-400">Choose filters below to browse the Kitsu anime catalog by genre, format, rating, and year.</p>
       </div>
-
-      {!filtersActive && (
-        <div className="mb-6 rounded-xl border border-dark-700 bg-dark-900 p-6 text-center">
-          <p className="text-dark-400">No results shown yet. Select one or more genres, a format, age rating, or year to start browsing anime.</p>
-        </div>
-      )}
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         <div className="col-span-full">
@@ -148,9 +143,9 @@ export function AnimeBrowser() {
         </label>
       </div>
 
-      {aniListWarning && (
+      {kitsuWarning && (
         <p className="mb-4 rounded-lg border border-amber-800 bg-amber-950/40 p-3 text-sm text-amber-200" role="status">
-          Some AniList or Ani.pm metadata could not be loaded. MAL IDs remain available for playback. {aniListWarning}
+          Some Kitsu or Ani.pm metadata could not be loaded. MAL IDs remain available for playback. {kitsuWarning}
         </p>
       )}
 

@@ -28,7 +28,7 @@ function App() {
           <Route path="movies" element={<MoviesPage />} />
           <Route path="tv-shows" element={<TVShowsPage />} />
           <Route path="anime" element={<AnimePage />} />
-          <Route path="anime/:malId" element={<AnimePage />} />
+          <Route path="anime/:id" element={<AnimePage />} />
           <Route path="watchlist" element={<WatchlistPage />} />
           <Route path="watched" element={<WatchedPage />} />
           <Route path="simkl/callback" element={<SimklCallbackPage />} />

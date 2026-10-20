@@ -15,7 +15,7 @@ interface AnimeCardProps {
 
 export function AnimeCard({ item, onRemove, removeLabel = 'Remove from anime list', subtitle }: AnimeCardProps) {
   const [isUnblurred, setIsUnblurred] = useState(false);
-  const isExplicit = item.ageRating === 'R+';
+  const isExplicit = item.ageRating === 'R';
 
   return (
     <Card
@@ -24,7 +24,7 @@ export function AnimeCard({ item, onRemove, removeLabel = 'Remove from anime lis
       padding="none"
       className="relative flex h-full flex-col border border-dark-700 bg-black shadow-[0_4px_18px_rgba(0,0,0,0.45)]"
     >
-      <Link to={`/anime/${item.malId}`} className="group block flex-1">
+      <Link to={`/anime/${item.id}`} className="group block flex-1">
         <div className="relative aspect-[2/3] overflow-hidden border-b border-dark-700 bg-dark-900">
           <Image
             src={item.poster}

@@ -93,10 +93,10 @@ export function Home() {
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
               {animeLibrary.continueWatching.map((entry) => (
                 <AnimeCard
-                  key={entry.item.malId}
+                  key={entry.item.id}
                   item={entry.item}
                   subtitle={`Episode ${entry.episode}`}
-                  onRemove={() => animeLibrary.removeFromContinueWatching(entry.item.malId)}
+                  onRemove={() => animeLibrary.removeFromContinueWatching(entry.item.id)}
                   removeLabel="Remove from Continue Watching"
                 />
               ))}

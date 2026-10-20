@@ -73,7 +73,7 @@ export interface CineSrcSearchResult {
 
 export interface AnimeTitle {
   id: string;
-  malId: number;
+  malId?: number;
   aniListId?: number;
   title: string;
   titleJapanese: string;
@@ -83,13 +83,16 @@ export interface AnimeTitle {
   banner: string;
   score: number;
   ageRating: string;
+  ageRatingGuide?: string;
   genres: string[];
   format?: string | null;
   episodes: number;
   status: string;
-  malUrl: string;
+  malUrl?: string;
   aniListUrl?: string;
   aniPmAvailable?: boolean;
+  aniPmEpisodes?: { total: number; sub: number; dub: number };
+  aniPmAniListId?: number;
 }
 
 export interface AnimeWatchHistoryItem {
