@@ -131,10 +131,10 @@ function mapAnime(media: AniListMedia): AnimeTitle {
 }
 
 const ANIME_PAGE_QUERY = `
-  query ($page: Int, $perPage: Int, $genre: [String], $sort: [MediaSort], $format: MediaFormat, $startDate: FuzzyDateInt, $endDate: FuzzyDateInt) {
+  query ($page: Int, $perPage: Int, $genre: [String], $sort: [MediaSort], $format: MediaFormat, $startDate: FuzzyDateInt, $endDate: FuzzyDateInt, $adult: Boolean) {
     Page(page: $page, perPage: $perPage) {
       pageInfo { total perPage currentPage lastPage hasNextPage }
-      media(type: ANIME, genre_in: $genre, sort: $sort, format: $format, startDate_greater: $startDate, endDate_lesser: $endDate) {
+      media(type: ANIME, genre_in: $genre, sort: $sort, format: $format, startDate_greater: $startDate, endDate_lesser: $endDate, adult: $adult) {
         id
         idMal
         title { english romaji native }
@@ -212,6 +212,7 @@ export async function discoverAnime(
     format: filters.format ?? undefined,
     startDate: year ? `${year}0101` : undefined,
     endDate: year ? `${year}1231` : undefined,
+    adult: filters.ageRating === 'r' ? true : filters.ageRating ? false : undefined,
   };
 
   const result = await anilistRequest(ANIME_PAGE_QUERY, variables, signal);
