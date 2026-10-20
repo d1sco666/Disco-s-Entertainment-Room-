@@ -138,6 +138,13 @@ const MEDIA_PAGE_QUERY = `
   }
 `;
 
+const STATUS_MAP: Record<string, string> = {
+  'Currently Airing': 'RELEASING',
+  'Finished Airing': 'FINISHED',
+  'Not yet aired': 'NOT_YET_RELEASED',
+  Cancelled: 'CANCELLED',
+};
+
 export async function fetchRecentAnime(
   page = 1,
   perPage = 20,
@@ -147,11 +154,11 @@ export async function fetchRecentAnime(
   const variables: Record<string, unknown> = {
     page,
     perPage,
-    genre: filters.genre ?? null,
-    format: filters.format ?? null,
-    status: filters.status ?? null,
-    seasonYear: filters.year ?? null,
   };
+  if (filters.genre) variables.genre = filters.genre;
+  if (filters.format) variables.format = filters.format;
+  if (filters.status) variables.status = STATUS_MAP[filters.status] ?? filters.status;
+  if (filters.year) variables.seasonYear = filters.year;
 
   const body = await graphqlAnilist<{
     Page: {
