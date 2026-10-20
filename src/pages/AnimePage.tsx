@@ -49,7 +49,7 @@ function AnimeDetailsPage({ id }: { id: string }) {
   const episodeCount = item.episodes || episodes.length || 0;
   const validEpisode = Number.isSafeInteger(episode) && episode >= 1 && episode <= (episodeCount || 0);
   const selectedEpisode = episodes.find((ep) => ep.number === episode);
-  const playableUrl = selectedEpisode ? getEpisodeUrl(selectedEpisode, language) : '';
+  const playableUrl = selectedEpisode && item.aniId ? getEpisodeUrl(item.aniId, selectedEpisode, language) : '';
 
   const play = () => {
     if (!validEpisode || !playableUrl) return;

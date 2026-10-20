@@ -25,6 +25,11 @@ export interface AnimeListResult {
   totalPages: number;
 }
 
+export interface SearchAnimeResult {
+  items: AnimeTitle[];
+  total: number;
+}
+
 function mapAnimeTitle(raw: unknown): AnimeTitle {
   const a = raw as Record<string, unknown>;
   const title = a['title'] as Record<string, unknown> | undefined;
@@ -185,6 +190,36 @@ export async function fetchRecentAnime(
   };
 }
 
+const SEARCH_QUERY = `
+  query ($page: Int, $perPage: Int, $search: String) {
+    Page(page: $page, perPage: $perPage) {
+      pageInfo { total perPage currentPage lastPage hasNextPage }
+      media(type: ANIME, isAdult: false, search: $search, sort: POPULARITY_DESC) {
+        id idMal title { romaji english native } coverImage { large } bannerImage description averageScore status season seasonYear format duration episodes genres source studios { nodes { name } }
+      }
+    }
+  }
+`;
+
+export async function searchAnime(
+  query: string,
+  page = 1,
+  perPage = 20,
+  signal?: AbortSignal
+): Promise<SearchAnimeResult> {
+  const body = await graphqlAnilist<{
+    Page: {
+      pageInfo: { total: number; perPage: number; currentPage: number; lastPage: number; hasNextPage: boolean };
+      media: unknown[];
+    };
+  }>(SEARCH_QUERY, { page, perPage, search: query }, signal);
+
+  return {
+    items: (body.Page.media ?? []).map(mapAnimeTitle),
+    total: body.Page.pageInfo.total,
+  };
+}
+
 const MEDIA_BY_ID_QUERY = `
   query ($id: Int) {
     Media(id: $id, type: ANIME) {
@@ -209,6 +244,12 @@ export async function fetchAnimeSeries(id: string | number, signal?: AbortSignal
   };
 }
 
-export function getEpisodeUrl(_episode: AnimeEpisode, _language: 'sub' | 'dub'): string {
-  return '';
+export function getEpisodeUrl(
+  animeId: number | undefined,
+  _episode: AnimeEpisode,
+  language: 'sub' | 'dub'
+): string {
+  if (!animeId) return '';
+  // Mikaza Kira server embed — AniList ID resolution with automatic failover across servers
+  return `https://mikaza.buzz/embed/kira/ani/${animeId}/${_episode.number}/${language}`;
 }

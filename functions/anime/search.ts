@@ -1,7 +1,15 @@
-// anikotoapi.site blocks Cloudflare Worker IPs, so proxy through
-// api.allorigins.win, which forwards the request and adds CORS headers.
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-const ANIKOTO_API_URL = 'https://anikotoapi.site';
+const ANILIST_API_URL = 'https://graphql.anilist.co';
+
+const SEARCH_QUERY = `
+  query ($page: Int, $perPage: Int, $search: String) {
+    Page(page: $page, perPage: $perPage) {
+      pageInfo { total perPage currentPage lastPage hasNextPage }
+      media(type: ANIME, isAdult: false, search: $search, sort: POPULARITY_DESC) {
+        id idMal title { romaji english native } coverImage { large } bannerImage description averageScore status season seasonYear format duration episodes genres source studios { nodes { name } }
+      }
+    }
+  }
+`;
 
 export const onRequestGet = async ({ request }) => {
   const url = new URL(request.url);
@@ -9,14 +17,19 @@ export const onRequestGet = async ({ request }) => {
   const page = url.searchParams.get('page') ?? '1';
   const perPage = url.searchParams.get('per_page') ?? '100';
 
-  const target = encodeURIComponent(
-    `${ANIKOTO_API_URL}/recent-anime?page=${page}&per_page=${perPage}`,
-  );
-
   try {
-    const response = await fetch(`${CORS_PROXY}${target}`, {
-      headers: { Accept: 'application/json' },
+    const response = await fetch(ANILIST_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        query: SEARCH_QUERY,
+        variables: { page: Number(page), perPage: Number(perPage), search: query || undefined },
+      }),
     });
+
     const body = await response.text();
     if (!response.ok) {
       return new Response(body, {
@@ -28,30 +41,15 @@ export const onRequestGet = async ({ request }) => {
       });
     }
 
-    if (!body || body.trim().length === 0) {
-      return new Response(
-        JSON.stringify({
-          ok: false,
-          error: `Anikoto API returned empty response (HTTP ${response.status})`,
-        }),
-        {
-          status: 502,
-          headers: {
-            'content-type': 'application/json',
-            'access-control-allow-origin': '*',
-          },
-        },
-      );
-    }
-
     const data = JSON.parse(body);
-    const items = Array.isArray(data.data) ? data.data : [];
-    const filtered = query
-      ? items.filter((item) => String(item.title ?? '').toLowerCase().includes(query.toLowerCase()))
-      : items;
+    const media = data?.data?.Page?.media ?? [];
 
     return new Response(
-      JSON.stringify({ ok: true, data: filtered, pagination: data.pagination ?? {} }),
+      JSON.stringify({
+        ok: true,
+        data: media,
+        pagination: data.data.Page.pageInfo ?? {},
+      }),
       {
         status: 200,
         headers: {
@@ -63,7 +61,7 @@ export const onRequestGet = async ({ request }) => {
       },
     );
   } catch {
-    return new Response(JSON.stringify({ ok: false, error: 'Proxy error' }), {
+    return new Response(JSON.stringify({ ok: false, error: 'Search proxy error' }), {
       status: 502,
       headers: { 'content-type': 'application/json' },
     });

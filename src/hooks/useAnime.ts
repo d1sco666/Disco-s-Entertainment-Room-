@@ -2,9 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   fetchRecentAnime,
   fetchAnimeSeries,
+  searchAnime,
   type AnimeListResult,
   type AnimeSeriesResult,
   type AnimeFilters,
+  type SearchAnimeResult,
 } from '../services/anime';
 import type { AnimeTitle } from '../types';
 
@@ -105,12 +107,9 @@ export function useAnimeSearch(query: string, enabled: boolean) {
     setLoading(true);
     setError(null);
     const timer = window.setTimeout(() => {
-      fetchRecentAnime(1, 100, {}, controller.signal)
-        .then((result) => {
-          const filtered = result.items.filter((item) =>
-            item.title.toLowerCase().includes(normalizedQuery.toLowerCase())
-          );
-          setItems(filtered);
+      searchAnime(normalizedQuery, 1, 100, controller.signal)
+        .then((result: SearchAnimeResult) => {
+          setItems(result.items);
         })
         .catch((searchError: unknown) => {
           if (!controller.signal.aborted) {
