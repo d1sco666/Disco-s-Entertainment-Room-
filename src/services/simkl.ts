@@ -380,7 +380,7 @@ function readAnimeSnapshot(): AnimeSyncSnapshot | null {
 
 async function loadAnimeDetails(id: string): Promise<AnimeTitle> {
   const { getAnimeDetails } = await import('./anime');
-  return (await getAnimeDetails(Number(id))).item;
+  return (await getAnimeDetails(id)).item;
 }
 
 function diffRemoved(previous: string[], current: string[]) {
