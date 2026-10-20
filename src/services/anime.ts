@@ -238,9 +238,16 @@ export async function fetchAnimeSeries(id: string | number, signal?: AbortSignal
     throw new Error('Anime not found.');
   }
 
+  const totalEpisodes = typeof media['episodes'] === 'number' ? media['episodes'] : 0;
+  const episodes: AnimeEpisode[] = Array.from({ length: totalEpisodes }, (_, i) => ({
+    id: i + 1,
+    title: `Episode ${i + 1}`,
+    number: i + 1,
+  }));
+
   return {
     anime: mapAnimeTitle(media),
-    episodes: [],
+    episodes,
   };
 }
 
