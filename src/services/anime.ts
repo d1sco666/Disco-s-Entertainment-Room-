@@ -1,10 +1,6 @@
 import type { AnimeTitle } from '../types';
 
-// anikotoapi.site blocks Cloudflare Worker IPs and sends no CORS headers,
-// so route through api.allorigins.win from the client. It forwards to the
-// upstream and returns CORS-enabled responses the browser can read.
-const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
-const ANIKOTO_API_URL = 'https://anikotoapi.site';
+const ANILIST_API_URL = 'https://graphql.anilist.co';
 
 export interface AnimeSeriesResult {
   anime: AnimeTitle;
@@ -31,53 +27,67 @@ export interface AnimeListResult {
 
 function mapAnimeTitle(raw: unknown): AnimeTitle {
   const a = raw as Record<string, unknown>;
-  const terms = a['terms_by_type'] as Record<string, string[]> | undefined;
+  const title = a['title'] as Record<string, unknown> | undefined;
+  const coverImage = a['coverImage'] as Record<string, unknown> | undefined;
+  const studios = a['studios'] as Record<string, unknown> | undefined;
 
   return {
     id: String(a['id'] ?? ''),
-    title: String(a['title'] ?? ''),
-    alternative: a['alternative'] ? String(a['alternative']) : undefined,
-    native: a['native'] ? String(a['native']) : undefined,
-    slug: a['slug'] ? String(a['slug']) : undefined,
-    year: a['year'] ? Number(a['year']) || 0 : 0,
+    aniId: typeof a['id'] === 'number' ? a['id'] : undefined,
+    malId: typeof a['idMal'] === 'number' ? a['idMal'] : undefined,
+    title: (title?.english ?? title?.romaji ?? title?.native ?? '') as string,
+    alternative: title?.romaji ? String(title.romaji) : undefined,
+    native: title?.native ? String(title.native) : undefined,
+    slug: undefined,
+    year: typeof a['seasonYear'] === 'number' ? a['seasonYear'] : 0,
     overview: a['description'] ? String(a['description']) : '',
-    poster: a['poster'] ? String(a['poster']) : '',
-    backdrop: a['background_image'] ? String(a['background_image']) : undefined,
-    score: a['score'] ? Number(a['score']) || 0 : 0,
-    status: a['status'] ? String(a['status']) : 'Unknown',
+    poster: coverImage?.large ? String(coverImage.large) : '',
+    backdrop: a['bannerImage'] ? String(a['bannerImage']) : undefined,
+    score: typeof a['averageScore'] === 'number' ? a['averageScore'] / 10 : 0,
+    status: mapAnilistStatus(a['status']),
     season: a['season'] ? String(a['season']) : undefined,
-    type: (a['terms_by_type'] as Record<string, string[]> | undefined)?.type?.[0],
+    type: a['format'] ? String(a['format']) : undefined,
     source: a['source'] ? String(a['source']) : undefined,
     duration: a['duration'] ? String(a['duration']) : undefined,
-    rating: a['rating'] ? String(a['rating']) : undefined,
-    episodes: a['episodes'] ? Number(a['episodes']) || 0 : 0,
-    genres: Array.isArray(terms?.genre) ? terms.genre : [],
-    studios: Array.isArray(terms?.studios) ? terms.studios : [],
-    isSub: a['is_sub'] === 3 || a['is_sub'] === 1 || a['is_sub'] === true,
-    isDub: a['is_dub'] === 3 || a['is_dub'] === 1 || a['is_dub'] === true,
-    malId: a['mal_id'] ? Number(a['mal_id']) : undefined,
-    aniId: a['ani_id'] ? Number(a['ani_id']) : undefined,
-    sId: a['s_id'] ? Number(a['s_id']) : undefined,
+    rating: undefined,
+    episodes: typeof a['episodes'] === 'number' ? a['episodes'] : 0,
+    genres: Array.isArray(a['genres']) ? (a['genres'] as string[]) : [],
+    studios: studios && Array.isArray((studios as Record<string, unknown>).nodes)
+      ? ((studios as Record<string, unknown>).nodes as Record<string, unknown>[]).map((s) => String(s['name'] ?? ''))
+      : [],
+    isSub: undefined,
+    isDub: undefined,
+    sId: undefined,
   };
 }
 
-function mapAnimeEpisode(raw: unknown): AnimeEpisode {
-  const e = raw as Record<string, unknown>;
-  const embedUrl = e['embed_url'] as Record<string, string> | undefined;
-  return {
-    id: e['id'] ? Number(e['id']) : 0,
-    title: e['title'] ? String(e['title']) : 'Episode',
-    jpTitle: e['jp_title'] ? String(e['jp_title']) : undefined,
-    number: e['number'] ? Number(e['number']) : 0,
-    episodeEmbedId: e['episode_embed_id'] ? Number(e['episode_embed_id']) : undefined,
-    subUrl: embedUrl?.sub,
-    dubUrl: embedUrl?.dub,
-  };
+function mapAnilistStatus(status: unknown): string {
+  switch (status) {
+    case 'FINISHED': return 'Finished Airing';
+    case 'RELEASING': return 'Currently Airing';
+    case 'NOT_YET_RELEASED': return 'Not yet aired';
+    case 'CANCELLED': return 'Cancelled';
+    default: return 'Unknown';
+  }
 }
 
-async function anikotoGet<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const target = encodeURIComponent(`${ANIKOTO_API_URL}${path}`);
-  const response = await fetch(`${CORS_PROXY}${target}`, { signal });
+
+
+async function graphqlAnilist<T>(
+  query: string,
+  variables: Record<string, unknown>,
+  signal?: AbortSignal
+): Promise<T> {
+  const response = await fetch(ANILIST_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({ query, variables }),
+    signal,
+  });
+
   const text = await response.text();
   let body: unknown = null;
   if (text) {
@@ -87,27 +97,46 @@ async function anikotoGet<T>(path: string, signal?: AbortSignal): Promise<T> {
       body = null;
     }
   }
+
   if (!response.ok) {
-    let detail = `HTTP ${response.status}`;
-    const errors = (body as { errors?: { detail?: string }[] } | null)?.errors;
-    if (errors && errors.length > 0) {
-      detail = errors.map((e) => e.detail).join('; ');
-    }
-    throw new Error(`Anikoto API error ${response.status}: ${detail}`);
+    throw new Error(`AniList API error ${response.status}`);
   }
-  if (body === null) {
-    throw new Error('Anikoto API returned an empty response.');
+
+  const data = body as { data?: unknown; errors?: { message: string }[] } | null;
+  if (data?.errors && data.errors.length > 0) {
+    throw new Error(`AniList API error: ${data.errors.map((e) => e.message).join('; ')}`);
   }
-  return body as T;
+  if (!data || data.data === null) {
+    throw new Error('AniList API returned an empty response.');
+  }
+  return data.data as T;
 }
 
 export interface AnimeFilters {
   genre?: string;
-  type?: string;
+  format?: string;
   year?: number | null;
   status?: string;
-  rating?: string;
 }
+
+const MEDIA_PAGE_QUERY = `
+  query ($page: Int, $perPage: Int, $genre: String, $format: MediaFormat, $status: MediaStatus, $seasonYear: Int) {
+    Page(page: $page, perPage: $perPage) {
+      pageInfo { total perPage currentPage lastPage hasNextPage }
+      media(
+        type: ANIME
+        isAdult: false
+        genre: $genre
+        format: $format
+        status: $status
+        seasonYear: $seasonYear
+        sort: POPULARITY_DESC
+      ) {
+        id idMal title { romaji english native } coverImage { large } bannerImage description averageScore status season seasonYear format duration episodes genres source studios { nodes { name } }
+      }
+    }
+  }
+`;
 
 export async function fetchRecentAnime(
   page = 1,
@@ -115,62 +144,64 @@ export async function fetchRecentAnime(
   filters: AnimeFilters = {},
   signal?: AbortSignal
 ): Promise<AnimeListResult> {
-  const params = new URLSearchParams({
-    page: String(page),
-    per_page: String(perPage),
-  });
-  if (filters.genre) params.set('genre', filters.genre);
-  if (filters.type) params.set('type', filters.type);
-  if (filters.year) params.set('year', String(filters.year));
-  if (filters.status) params.set('status', filters.status);
+  const variables: Record<string, unknown> = {
+    page,
+    perPage,
+    genre: filters.genre ?? null,
+    format: filters.format ?? null,
+    status: filters.status ?? null,
+    seasonYear: filters.year ?? null,
+  };
 
-  const body = await anikotoGet<{
-    ok: boolean;
-    data: unknown[];
-    pagination: { page: number; per_page: number; total: number; total_pages: number };
-  }>(`/recent-anime?${params.toString()}`, signal);
+  const body = await graphqlAnilist<{
+    Page: {
+      pageInfo: { total: number; perPage: number; currentPage: number; lastPage: number; hasNextPage: boolean };
+      media: unknown[];
+    };
+  }>(MEDIA_PAGE_QUERY, variables, signal);
 
-  let items = (body.data ?? []).map(mapAnimeTitle);
+  const items = (body.Page.media ?? []).map(mapAnimeTitle);
 
-  // Client-side filtering since the upstream API returns the same list
-  // regardless of filter query parameters.
-  if (filters.genre) {
-    items = items.filter((item) => item.genres.includes(filters.genre!));
-  }
-  if (filters.type) {
-    items = items.filter((item) => item.type === filters.type);
-  }
+  // Client-side filtering since AniList's seasonYear is combined with season,
+  // and we want standalone year filtering independent of season.
+  let filtered = items;
   if (filters.year) {
-    items = items.filter((item) => item.year === filters.year);
-  }
-  if (filters.status) {
-    items = items.filter((item) => item.status === filters.status);
-  }
-  if (filters.rating) {
-    items = items.filter((item) => item.rating === filters.rating);
+    filtered = filtered.filter((item) => item.year === filters.year);
   }
 
   return {
-    items,
-    page: body.pagination.page,
-    perPage: body.pagination.per_page,
-    total: body.pagination.total,
-    totalPages: body.pagination.total_pages,
+    items: filtered,
+    page: body.Page.pageInfo.currentPage,
+    perPage: body.Page.pageInfo.perPage,
+    total: body.Page.pageInfo.total,
+    totalPages: body.Page.pageInfo.lastPage,
   };
 }
+
+const MEDIA_BY_ID_QUERY = `
+  query ($id: Int) {
+    Media(id: $id, type: ANIME) {
+      id idMal title { romaji english native } coverImage { large } bannerImage description averageScore status season seasonYear format duration episodes genres source studios { nodes { name } }
+    }
+  }
+`;
 
 export async function fetchAnimeSeries(id: string | number, signal?: AbortSignal): Promise<AnimeSeriesResult> {
-  const body = await anikotoGet<{
-    ok: boolean;
-    data: { anime: unknown; episodes: unknown[] };
-  }>(`/series/${encodeURIComponent(id)}`, signal);
+  const body = await graphqlAnilist<{
+    Media: Record<string, unknown> | null;
+  }>(MEDIA_BY_ID_QUERY, { id: Number(id) }, signal);
+
+  const media = body.Media;
+  if (!media) {
+    throw new Error('Anime not found.');
+  }
 
   return {
-    anime: mapAnimeTitle(body.data.anime),
-    episodes: (body.data.episodes ?? []).map(mapAnimeEpisode),
+    anime: mapAnimeTitle(media),
+    episodes: [],
   };
 }
 
-export function getEpisodeUrl(episode: AnimeEpisode, language: 'sub' | 'dub'): string {
-  return language === 'dub' && episode.dubUrl ? episode.dubUrl : episode.subUrl ?? '';
+export function getEpisodeUrl(_episode: AnimeEpisode, _language: 'sub' | 'dub'): string {
+  return '';
 }

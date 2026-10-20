@@ -1,12 +1,12 @@
 # Entertainment Room
 
-A personal movie, TV, and anime discovery website using **TMDB**, **MyAnimeList**, and **Kitsu** for title metadata, embedded players for video, and **Simkl** for optional watchlist and watched-history sync.
+A personal movie, TV, and anime discovery website using **TMDB**, **MyAnimeList**, and **AniList** for title metadata, embedded players for video, and **Simkl** for optional watchlist and watched-history sync.
 
 ## Features
 
 - 🎬 **Movie & TV Discovery** - Popular, trending, search, posters, ratings, and certifications from TMDB
 - 🎥 **Player Choice** - Choose between Vimeus, CineSrc, Vidstuck, and Zxcstream for movies and TV episodes
-- 🍥 **Anime Discovery** - Browse non-explicit anime by genre, type, status, rating, and release year, with MAL/Kitsu ID matching and Ani.pm playback
+- 🍥 **Anime Discovery** - Browse non-explicit anime by genre, format, status, and release year, with MAL and AniList IDs
 - 🔍 **Search Functionality** - Find content instantly
 - 📱 **Responsive Design** - Works on all devices
 - 🌙 **Dark Mode** - Easy on the eyes
@@ -18,8 +18,8 @@ A personal movie, TV, and anime discovery website using **TMDB**, **MyAnimeList*
 - **Styling**: Tailwind CSS v4
 - **State Management**: React hooks
 - **Routing**: React Router v7
-- **Video Player**: Vimeus, CineSrc, Vidstuck, Zxcstream, and Ani.pm
-- **Metadata APIs**: TMDB, MyAnimeList via Jikan, and Kitsu
+- **Video Player**: Vimeus, CineSrc, Vidstuck, and Zxcstream
+- **Metadata APIs**: TMDB, MyAnimeList via Jikan, and AniList
 - **Library Sync**: Simkl OAuth 2.0 (PKCE)
 - **Authentication**: Auth0 SPA SDK
 - **Build and lint**: Vite 6 and ESLint 9
@@ -78,7 +78,7 @@ Vimeus documents the `view_key` as a public embed parameter and requires it in e
 
 - Register the exact callback URL(s) in the Simkl developer app settings: `http://localhost:3000/simkl/callback` for local development and `https://your-site-domain/simkl/callback` for production.
 - Use an Auth V2 app/device client without a client secret. The integration uses OAuth PKCE and requests `media:read media:write`; it does not store a client secret.
-- Connect and manually sync movie, TV, and anime libraries from the **Simkl Sync** section on the Watchlist page. The first sync merges libraries; later syncs mirror watchlist and watched-history removals in either direction. Anime uses MAL and AniList IDs (from Kitsu mappings).
+- Connect and manually sync movie, TV, and anime libraries from the **Simkl Sync** section on the Watchlist page. The first sync merges libraries; later syncs mirror watchlist and watched-history removals in either direction. Anime uses MAL and AniList IDs.
 - Movie and episode watched states are explicit actions on detail pages; opening the embedded player does not mark content watched.
 - OAuth tokens are stored in this browser's local storage. Disconnecting removes the local tokens and sync snapshot.
 
@@ -109,7 +109,7 @@ src/
 - See the [Vimeus API documentation](https://vimeus.com/) for supported embed URLs and options.
 - Vidstuck embeds use `https://vidstuck.cc/embed/movie/{tmdb_id}` for movies and `https://vidstuck.cc/embed/tv/{tmdb_id}/{season}/{episode}` for TV episodes. See the [Vidstuck documentation](https://vidstuck.cc/documentation).
 - Zxcstream opens movies at `https://zxcstream.cc/player/movie/{tmdb_id}` and episodes at `https://zxcstream.cc/player/tv/{tmdb_id}/{season}/{episode}`. Choose English (`dubLang=en`) or Spanish (`dubLang=es`) when selecting Zxcstream.
-- Anime metadata is browsed from **Kitsu** and matched to MAL/AniList IDs via Kitsu mappings. Both IDs are stored with anime library entries; the Ani.pm player uses an AniList ID when available and falls back to the MAL ID. Ani.pm embeds use `https://ani.pm/embed/ani/{anilist_id}/{episode}/{sub|dub}` or `https://ani.pm/embed/mal/{mal_id}/{episode}/{sub|dub}`. Anime watchlist and watched history sync with Simkl using MAL and AniList IDs; continue-watching remains local. Anime entries include a type field (TV, Movie, OVA, ONA, Special, Music).
+- Anime metadata is browsed from **AniList** and matched to MAL IDs. Both IDs are stored with anime library entries. Anime entries include format, status, season, and source fields. Anime watchlist and watched history sync with Simkl using MAL and AniList IDs; continue-watching remains local.
 
 ### Content Browsing
 - Trending movies & TV shows
@@ -126,7 +126,7 @@ src/
 - **Search** - Debounced search results
 - **Movie Detail** - Info and provider picker for embedded playback
 - **TV Show Detail** - Season/episode selector and provider picker for embedded playback
-- **Anime** - Genre, type, status, rating, and year filters, Kitsu/MAL metadata and IDs, local anime library, and Ani.pm episode playback
+- **Anime** - Genre, format, status, and year filters, AniList metadata and IDs, local anime library.
 - **Watchlist** - Local collection with optional Simkl synchronization
 - **Watched** - Explicitly marked movies and episodes, optionally synced with Simkl
 

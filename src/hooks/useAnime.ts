@@ -105,8 +105,6 @@ export function useAnimeSearch(query: string, enabled: boolean) {
     setLoading(true);
     setError(null);
     const timer = window.setTimeout(() => {
-      // The anikotoapi site endpoint does not offer text search, so fall back to
-      // browsing recent anime client-side and filtering by title.
       fetchRecentAnime(1, 100, {}, controller.signal)
         .then((result) => {
           const filtered = result.items.filter((item) =>

@@ -98,16 +98,7 @@ function AnimeDetailsPage({ id }: { id: string }) {
                 </Button>
                 <Button variant="outline" onClick={() => markWatched(item)}>Mark as Watched</Button>
               </div>
-              {item.slug && (
-                <a
-                  href={`https://anikototv.to/anime/${item.slug}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-sm text-primary-400 hover:underline"
-                >
-                  View on Anikoto
-                </a>
-              )}
+
             </div>
           </div>
         </section>
@@ -151,7 +142,7 @@ function AnimeDetailsPage({ id }: { id: string }) {
                 <p className="text-xs text-red-400">No playable link for the selected language.</p>
               )}
               <p className="text-xs text-dark-500">
-                Playback links come from the Anikoto API.
+                Episode playback links are not available from AniList.
               </p>
             </>
           )}

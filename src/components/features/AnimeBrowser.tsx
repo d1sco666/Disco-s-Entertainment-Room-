@@ -4,9 +4,8 @@ import type { AnimeFilters } from '../../services/anime';
 import { AnimeCard } from './AnimeCard';
 import { SkeletonCard } from '../ui/Skeleton';
 
-const animeTypes = ['TV', 'Movie', 'OVA', 'ONA', 'Special', 'Music'];
-const animeStatuses = ['Currently Airing', 'Finished Airing', 'Not yet aired', 'TBA'];
-const animeRatings = ['G', 'PG', 'PG-13', 'R', 'R+', 'None'];
+const animeFormats = ['TV', 'TV_SHORT', 'MOVIE', 'SPECIAL', 'OVA', 'ONA', 'MUSIC'];
+const animeStatuses = ['Currently Airing', 'Finished Airing', 'Not yet aired', 'Cancelled'];
 
 export function AnimeBrowser() {
   const [page] = useState(1);
@@ -41,7 +40,7 @@ export function AnimeBrowser() {
     <section aria-labelledby="anime-browser-title" className="mb-8">
       <div className="mb-5">
         <h2 id="anime-browser-title" className="text-2xl font-bold text-dark-100">Browse Anime</h2>
-        <p className="mt-1 text-sm text-dark-400">Filter and browse the Anikoto catalog.</p>
+        <p className="mt-1 text-sm text-dark-400">Filter and browse the AniList catalog.</p>
       </div>
 
       <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -69,16 +68,16 @@ export function AnimeBrowser() {
           )}
         </div>
         <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
-          Type
+          Format
           <select
-            value={filters.type ?? ''}
-            onChange={(event) => setFilters((prev) => ({ ...prev, type: event.target.value || undefined }))}
+            value={filters.format ?? ''}
+            onChange={(event) => setFilters((prev) => ({ ...prev, format: event.target.value || undefined }))}
             className="w-full border border-dark-600 bg-dark-800 px-3 py-2.5 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
-            <option value="">Any type</option>
-            {animeTypes.map((t) => (
-              <option key={t} value={t}>
-                {t}
+            <option value="">Any format</option>
+            {animeFormats.map((f) => (
+              <option key={f} value={f}>
+                {f}
               </option>
             ))}
           </select>
@@ -98,21 +97,7 @@ export function AnimeBrowser() {
             ))}
           </select>
         </label>
-        <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
-          Rating
-          <select
-            value={filters.rating ?? ''}
-            onChange={(event) => setFilters((prev) => ({ ...prev, rating: event.target.value || undefined }))}
-            className="w-full border border-dark-600 bg-dark-800 px-3 py-2.5 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">Any rating</option>
-            {animeRatings.map((r) => (
-              <option key={r} value={r}>
-                {r}
-              </option>
-            ))}
-          </select>
-        </label>
+
         <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
           Release year
           <select
