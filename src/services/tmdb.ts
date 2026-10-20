@@ -15,6 +15,7 @@ interface TMDBTitle {
   id: number;
   title?: string;
   name?: string;
+  adult?: boolean;
   overview?: string;
   poster_path?: string | null;
   backdrop_path?: string | null;
@@ -120,6 +121,8 @@ const JUNK_KEYWORD_IDS = [
   352503, // erotic theater
   198385, // hentai
   155477, // softcore
+  341367, // soft porn
+  382870, // gay softcore
   325693, // erotica
   354470, // sex scene
   33451, // masturbation
@@ -148,6 +151,8 @@ const JUNK_TITLE_PATTERNS = [
   /\berotic\b/i,
   /\berotica\b/i,
   /\bsoftcore\b/i,
+  /\bsoft\s*-?\s*porn\b/i,
+  /\bporno\b/i,
   /\bsex\s*scene\b/i,
   /\bmasturbat/i,
   /\badult\s*(?:film|video|animation|drama)\b/i,
@@ -155,6 +160,13 @@ const JUNK_TITLE_PATTERNS = [
 
 function isJunkTitle(title: string) {
   return JUNK_TITLE_PATTERNS.some((pattern) => pattern.test(title));
+}
+
+// TMDB flags softcore and other adult titles with `adult: true` on the
+// result itself. Only the discover endpoints support `without_keywords`,
+// so every other endpoint relies on this flag plus the title patterns.
+function isBlockedTitle(title: string, adult?: boolean) {
+  return adult === true || isJunkTitle(title);
 }
 
 const genreNames: Record<number, string> = {
@@ -337,12 +349,12 @@ class TMDBAPI {
     });
     const movies = data.results
       .filter((result) => result.media_type === 'movie')
-      .map((result) => mapMovie(result as TMDBMovie))
-      .filter((movie) => !isJunkTitle(movie.title));
+      .filter((result) => !isBlockedTitle(result.title ?? '', result.adult))
+      .map((result) => mapMovie(result as TMDBMovie));
     const tvShows = data.results
       .filter((result) => result.media_type === 'tv')
-      .map((result) => mapTVShow(result as TMDBTVShow))
-      .filter((show) => !isJunkTitle(show.name));
+      .filter((result) => !isBlockedTitle(result.name ?? '', result.adult))
+      .map((result) => mapTVShow(result as TMDBTVShow));
 
     return {
       movies,
@@ -356,7 +368,9 @@ class TMDBAPI {
   async getPopularMovies(page = 1): Promise<{ movies: CineSrcMovie[]; totalPages: number }> {
     const data = await this.request<TMDBList<TMDBMovie>>('/movie/popular', { page: String(page) });
     return {
-      movies: data.results.map(mapMovie).filter((movie) => !isJunkTitle(movie.title)),
+      movies: data.results
+        .filter((movie) => !isBlockedTitle(movie.title, movie.adult))
+        .map(mapMovie),
       totalPages: data.total_pages,
     };
   }
@@ -364,7 +378,9 @@ class TMDBAPI {
   async getPopularTVShows(page = 1): Promise<{ tvShows: CineSrcTVShow[]; totalPages: number }> {
     const data = await this.request<TMDBList<TMDBTVShow>>('/tv/popular', { page: String(page) });
     return {
-      tvShows: data.results.map(mapTVShow).filter((show) => !isJunkTitle(show.name)),
+      tvShows: data.results
+        .filter((show) => !isBlockedTitle(show.name, show.adult))
+        .map(mapTVShow),
       totalPages: data.total_pages,
     };
   }
@@ -411,13 +427,17 @@ class TMDBAPI {
     if (type === 'movie') {
       const data = await this.request<TMDBList<TMDBMovie>>('/discover/movie', params);
       return {
-        items: data.results.map(mapMovie).filter((movie) => !isJunkTitle(movie.title)),
+        items: data.results
+          .filter((movie) => !isBlockedTitle(movie.title, movie.adult))
+          .map(mapMovie),
         totalPages: data.total_pages,
       };
     }
     const data = await this.request<TMDBList<TMDBTVShow>>('/discover/tv', params);
     return {
-      items: data.results.map(mapTVShow).filter((show) => !isJunkTitle(show.name)),
+      items: data.results
+        .filter((show) => !isBlockedTitle(show.name, show.adult))
+        .map(mapTVShow),
       totalPages: data.total_pages,
     };
   }
@@ -437,7 +457,9 @@ class TMDBAPI {
   async getTrendingMovies(page = 1): Promise<{ movies: CineSrcMovie[]; totalPages: number }> {
     const data = await this.request<TMDBList<TMDBMovie>>('/trending/movie/day', { page: String(page) });
     return {
-      movies: data.results.map(mapMovie).filter((movie) => !isJunkTitle(movie.title)),
+      movies: data.results
+        .filter((movie) => !isBlockedTitle(movie.title, movie.adult))
+        .map(mapMovie),
       totalPages: data.total_pages,
     };
   }
@@ -452,7 +474,9 @@ class TMDBAPI {
       without_keywords: JUNK_KEYWORD_IDS.join(','),
     });
     return {
-      movies: data.results.map(mapMovie).filter((movie) => !isJunkTitle(movie.title)),
+      movies: data.results
+        .filter((movie) => !isBlockedTitle(movie.title, movie.adult))
+        .map(mapMovie),
       totalPages: data.total_pages,
     };
   }
@@ -479,7 +503,9 @@ class TMDBAPI {
   async getTrendingTVShows(page = 1): Promise<{ tvShows: CineSrcTVShow[]; totalPages: number }> {
     const data = await this.request<TMDBList<TMDBTVShow>>('/trending/tv/day', { page: String(page) });
     return {
-      tvShows: data.results.map(mapTVShow).filter((show) => !isJunkTitle(show.name)),
+      tvShows: data.results
+        .filter((show) => !isBlockedTitle(show.name, show.adult))
+        .map(mapTVShow),
       totalPages: data.total_pages,
     };
   }
