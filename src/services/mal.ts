@@ -156,10 +156,6 @@ export const malAPI = {
   async connect() {
     if (!CLIENT_ID) throw new Error('Set VITE_MAL_CLIENT_ID before connecting MyAnimeList.');
     const verifier = randomString(64);
-    const challenge = toBase64Url(new Uint8Array(await crypto.subtle.digest(
-      'SHA-256',
-      new TextEncoder().encode(verifier),
-    )));
     const pending: PendingAuth = {
       verifier,
       state: randomString(32),
@@ -172,8 +168,8 @@ export const malAPI = {
       redirect_uri: pending.redirectUri,
       response_type: 'code',
       state: pending.state,
-      code_challenge: challenge,
-      code_challenge_method: 'S256',
+      code_challenge: verifier,
+      code_challenge_method: 'plain',
     }).toString();
     window.location.assign(url.toString());
   },
