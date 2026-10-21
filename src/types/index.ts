@@ -96,6 +96,7 @@ export interface AnimeTitle {
   malId?: number;
   aniId?: number;
   sId?: number;
+  seasons?: AnimeTitle[];
 }
 
 export interface AnimeWatchHistoryItem {

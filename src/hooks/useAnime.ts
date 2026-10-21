@@ -132,6 +132,7 @@ export function useAnimeSearch(query: string, enabled: boolean) {
 
 export function useAnimeDetails(id: string | null) {
   const [item, setItem] = useState<AnimeTitle | null>(null);
+  const [seasons, setSeasons] = useState<AnimeTitle[]>([]);
   const [episodes, setEpisodes] = useState<AnimeSeriesResult['episodes']>([]);
   const [loading, setLoading] = useState(Boolean(id));
   const [error, setError] = useState<string | null>(null);
@@ -141,6 +142,7 @@ export function useAnimeDetails(id: string | null) {
     const controller = new AbortController();
     if (!id) {
       setItem(null);
+      setSeasons([]);
       setEpisodes([]);
       setLoading(false);
       setError(id === null ? null : 'Invalid anime ID.');
@@ -151,6 +153,7 @@ export function useAnimeDetails(id: string | null) {
     }
 
     setItem(null);
+    setSeasons([]);
     setEpisodes([]);
     setLoading(true);
     setError(null);
@@ -158,6 +161,7 @@ export function useAnimeDetails(id: string | null) {
       .then((result: AnimeSeriesResult) => {
         if (active) {
           setItem(result.anime);
+          setSeasons(result.seasons ?? []);
           setEpisodes(result.episodes);
         }
       })
@@ -175,5 +179,5 @@ export function useAnimeDetails(id: string | null) {
     };
   }, [id]);
 
-  return { item, episodes, loading, error };
+  return { item, seasons, episodes, loading, error };
 }

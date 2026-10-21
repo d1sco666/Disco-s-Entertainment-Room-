@@ -4,6 +4,7 @@ const ANILIST_API_URL = 'https://graphql.anilist.co';
 
 export interface AnimeSeriesResult {
   anime: AnimeTitle;
+  seasons: AnimeTitle[];
   episodes: AnimeEpisode[];
 }
 
@@ -220,10 +221,110 @@ export async function searchAnime(
   };
 }
 
+const SEASON_FORMATS = new Set(['TV', 'TV_SHORT', 'ONA']);
+const CHAIN_EDGE_TYPES = new Set(['SEQUEL', 'PREQUEL', 'PARENT']);
+
+const SEASON_ORDER: Record<string, number> = {
+  WINTER: 0,
+  SPRING: 1,
+  SUMMER: 2,
+  FALL: 3,
+};
+
+function seasonKey(media: Record<string, unknown>): [number, number, number, number] {
+  const startDate = media['startDate'] as Record<string, unknown> | undefined;
+  const year = (typeof media['seasonYear'] === 'number' ? media['seasonYear']
+    : typeof startDate?.['year'] === 'number' ? startDate.year : 9999) as number;
+  const season = SEASON_ORDER[String(media['season'])] ?? (startDate && typeof startDate.month === 'number'
+    ? Math.floor((startDate.month - 1) / 3) : 4);
+  const month = startDate && typeof startDate.month === 'number' ? startDate.month : 0;
+  const day = startDate && typeof startDate.day === 'number' ? startDate.day : 0;
+  return [year, season, month, day];
+}
+
+function isSeasonMedia(media: Record<string, unknown>): boolean {
+  return SEASON_FORMATS.has(String(media['format']))
+    && (media['episodes'] === null || media['episodes'] === undefined || typeof media['episodes'] === 'number');
+}
+
+async function batchMediaByIds(ids: number[]): Promise<Record<string, unknown>[]> {
+  const body = await graphqlAnilist<{
+    Page: {
+      pageInfo: { total: number; perPage: number; currentPage: number };
+      media: Record<string, unknown>[];
+    };
+  }>(SEASON_BATCH_QUERY, { ids });
+
+  return (body.Page?.media ?? []).map((media) => media);
+}
+
+async function collectSeasons(root: Record<string, unknown>): Promise<Record<string, unknown>[]> {
+  const collected = new Map<number, Record<string, unknown>>([[root['id'] as number, root]]);
+  let frontier = [root];
+  const seen = new Set<number>([root['id'] as number]);
+
+  for (let round = 0; round < 6 && frontier.length > 0; round += 1) {
+    const nextIds: number[] = [];
+    for (const media of frontier) {
+      const edges = (media['relations'] as Record<string, unknown> | undefined)?.['edges'] as unknown[] | undefined;
+      for (const edge of edges ?? []) {
+        const relationType = (edge as Record<string, unknown>)['relationType'];
+        if (!CHAIN_EDGE_TYPES.has(String(relationType))) continue;
+        const node = (edge as Record<string, unknown>)['node'] as Record<string, unknown> | undefined;
+        if (!node || typeof node['id'] !== 'number') continue;
+        if (seen.has(node['id'])) continue;
+        seen.add(node['id']);
+        nextIds.push(node['id']);
+      }
+    }
+    if (nextIds.length === 0) break;
+    const fetched = await batchMediaByIds(nextIds);
+    const nextFrontier: Record<string, unknown>[] = [];
+    for (const media of fetched) {
+      collected.set(media['id'] as number, media);
+      if (isSeasonMedia(media)) nextFrontier.push(media);
+    }
+    frontier = nextFrontier;
+  }
+
+  return [...collected.values()]
+    .filter(isSeasonMedia)
+    .sort((a, b) => {
+      const ka = seasonKey(a);
+      const kb = seasonKey(b);
+      for (let i = 0; i < ka.length; i += 1) {
+        if (ka[i] !== kb[i]) return ka[i] - kb[i];
+      }
+      return 0;
+    });
+}
+
+const SEASON_BATCH_QUERY = `
+  query ($ids: [Int]) {
+    Page(page: 1, perPage: 50) {
+      pageInfo { total perPage currentPage }
+      media(id_in: $ids, type: ANIME) {
+        id idMal title { romaji english native } coverImage { large } bannerImage description averageScore status season seasonYear format duration episodes genres source studios { nodes { name } } relations { edges { relationType node { id idMal title { romaji } format episodes season seasonYear } } } startDate { year month day }
+      }
+    }
+  }
+`;
+
+export async function fetchAnimeSeasons(id: string | number, signal?: AbortSignal): Promise<AnimeTitle[]> {
+  const root = await graphqlAnilist<{ Media: Record<string, unknown> | null }>(
+    MEDIA_BY_ID_QUERY, { id: Number(id) }, signal,
+  );
+  const media = root.Media;
+  if (!media) throw new Error('Anime not found.');
+
+  const seasonNodes = await collectSeasons(media);
+  return seasonNodes.map(mapAnimeTitle);
+}
+
 const MEDIA_BY_ID_QUERY = `
   query ($id: Int) {
     Media(id: $id, type: ANIME) {
-      id idMal title { romaji english native } coverImage { large } bannerImage description averageScore status season seasonYear format duration episodes genres source studios { nodes { name } }
+      id idMal title { romaji english native } coverImage { large } bannerImage description averageScore status season seasonYear format duration episodes genres source studios { nodes { name } } relations { edges { relationType node { id idMal title { romaji } format episodes season seasonYear } } } startDate { year month day }
     }
   }
 `;
@@ -245,8 +346,12 @@ export async function fetchAnimeSeries(id: string | number, signal?: AbortSignal
     number: i + 1,
   }));
 
+  const seasonNodes = await collectSeasons(media);
+  const seasons = seasonNodes.map(mapAnimeTitle);
+
   return {
     anime: mapAnimeTitle(media),
+    seasons,
     episodes,
   };
 }

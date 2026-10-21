@@ -26,8 +26,9 @@ export function AnimePage() {
 }
 
 function AnimeDetailsPage({ id }: { id: string }) {
-  const { item, episodes, loading, error } = useAnimeDetails(id);
+  const { item, seasons, loading, error } = useAnimeDetails(id);
   const { watchlist, toggleWatchlist, markWatched, addToContinueWatching } = useAnimeLibrary();
+  const [seasonIndex, setSeasonIndex] = useState(0);
   const [episode, setEpisode] = useState(1);
   const [language, setLanguage] = useState<'sub' | 'dub'>('sub');
   const [playerOpen, setPlayerOpen] = useState(false);
@@ -45,16 +46,26 @@ function AnimeDetailsPage({ id }: { id: string }) {
     );
   }
 
-  const isSaved = watchlist.some((saved) => saved.id === item.id);
-  const episodeCount = item.episodes || episodes.length || 0;
-  const validEpisode = Number.isSafeInteger(episode) && episode >= 1 && episode <= (episodeCount || 0);
-  const selectedEpisode = episodes.find((ep) => ep.number === episode);
-  const playableUrl = selectedEpisode && item.aniId ? getEpisodeUrl(item.aniId, selectedEpisode, language) : '';
+  const selectedSeason = seasons.length ? seasons[seasonIndex] : item;
+  const seasonEpisodeCount = selectedSeason.episodes || 0;
+  const validEpisode = Number.isSafeInteger(episode) && episode >= 1 && episode <= (seasonEpisodeCount || 0);
+  const selectedEpisodeNumber = episode;
+  const playableUrl = validEpisode && selectedSeason.aniId
+    ? getEpisodeUrl(selectedSeason.aniId, { id: selectedEpisodeNumber, number: selectedEpisodeNumber } as import('../services/anime').AnimeEpisode, language)
+    : '';
 
   const play = () => {
     if (!validEpisode || !playableUrl) return;
-    addToContinueWatching(item, episode);
+    addToContinueWatching(selectedSeason, episode);
     setPlayerOpen(true);
+  };
+
+  const handleSeasonChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const index = Number(event.target.value);
+    if (Number.isFinite(index) && index >= 0 && index < seasons.length) {
+      setSeasonIndex(index);
+      setEpisode(1);
+    }
   };
 
   return (
@@ -72,7 +83,8 @@ function AnimeDetailsPage({ id }: { id: string }) {
               src={item.poster}
               alt={`${item.title} poster`}
               fallback="/placeholder-poster.svg"
-              className="aspect-[2/3] w-full rounded-xl object-cover sm:w-64"
+              aspectRatio="portrait"
+              className="w-full rounded-xl object-cover sm:w-64"
             />
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
@@ -88,15 +100,32 @@ function AnimeDetailsPage({ id }: { id: string }) {
               <div className="flex flex-wrap gap-2">
                 {item.genres.map((genre) => <Badge key={genre} variant="default">{genre}</Badge>)}
               </div>
+              {seasons.length > 1 && (
+                <div className="mt-3">
+                  <label className="block mb-1.5 text-sm font-medium text-dark-300">Season</label>
+                  <select
+                    value={String(seasonIndex)}
+                    onChange={handleSeasonChange}
+                    className="w-full border border-dark-600 bg-dark-800 px-3 py-2.5 text-dark-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    aria-label="Select season"
+                  >
+                    {seasons.map((s, i) => (
+                      <option key={s.id} value={String(i)}>
+                        Season {i + 1}{s.season ? ` · ${s.season}` : ''} ({s.episodes || 0} eps)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <p className="whitespace-pre-line leading-relaxed text-dark-300">{item.overview || 'No synopsis available.'}</p>
               <div className="flex flex-wrap gap-3">
                 <Button onClick={play} disabled={!validEpisode || !playableUrl}>
                   {validEpisode && playableUrl ? 'Watch Episode' : 'Episode not playable'}
                 </Button>
-                <Button variant="outline" aria-pressed={isSaved} onClick={() => toggleWatchlist(item)}>
-                  {isSaved ? 'Remove from Anime Watchlist' : 'Add to Anime Watchlist'}
+                <Button variant="outline" aria-pressed={watchlist.some((saved) => saved.id === selectedSeason.id)} onClick={() => toggleWatchlist(selectedSeason)}>
+                  {watchlist.some((saved) => saved.id === selectedSeason.id) ? 'Remove from Anime Watchlist' : 'Add to Anime Watchlist'}
                 </Button>
-                <Button variant="outline" onClick={() => markWatched(item)}>Mark as Watched</Button>
+                <Button variant="outline" onClick={() => markWatched(selectedSeason)}>Mark as Watched</Button>
               </div>
 
             </div>
@@ -105,11 +134,27 @@ function AnimeDetailsPage({ id }: { id: string }) {
 
         <aside className="space-y-4 rounded-xl border border-dark-700 bg-dark-900 p-5">
           <h2 className="text-lg font-semibold text-white">Player</h2>
-          {episodes.length === 0 && (
+          {seasonEpisodeCount === 0 && (
             <p className="text-sm text-dark-400">No episodes available for this title.</p>
           )}
-          {episodes.length > 0 && (
+          {seasonEpisodeCount > 0 && (
             <>
+              <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
+                Season
+                <select
+                  value={String(seasonIndex)}
+                  onChange={handleSeasonChange}
+                  disabled={seasons.length <= 1}
+                  className="border border-dark-600 bg-dark-800 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  aria-label="Select season"
+                >
+                  {seasons.map((s, i) => (
+                    <option key={s.id} value={String(i)}>
+                      Season {i + 1}{s.season ? ` · ${s.season}` : ''} ({s.episodes || 0} eps)
+                    </option>
+                  ))}
+                </select>
+              </label>
               <label className="flex flex-col gap-1.5 text-sm font-medium text-dark-300">
                 Episode
                 <select
@@ -117,9 +162,9 @@ function AnimeDetailsPage({ id }: { id: string }) {
                   onChange={(event) => setEpisode(Number(event.target.value))}
                   className="border border-dark-600 bg-dark-800 px-3 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-primary-500"
                 >
-                  {episodes.map((ep) => (
-                    <option key={ep.id} value={ep.number}>
-                      Episode {ep.number}{ep.title ? ` · ${ep.title}` : ''}
+                  {Array.from({ length: seasonEpisodeCount }, (_, i) => i + 1).map((epNumber) => (
+                    <option key={epNumber} value={epNumber}>
+                      Episode {epNumber}
                     </option>
                   ))}
                 </select>
@@ -149,12 +194,12 @@ function AnimeDetailsPage({ id }: { id: string }) {
         </aside>
       </div>
 
-      {playerOpen && playableUrl && selectedEpisode && (
+      {playerOpen && playableUrl && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4"
           role="dialog"
           aria-modal="true"
-          aria-label={`${item.title} episode ${episode}`}
+          aria-label={`${selectedSeason.title} episode ${selectedEpisodeNumber}`}
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) setPlayerOpen(false);
           }}
@@ -162,7 +207,7 @@ function AnimeDetailsPage({ id }: { id: string }) {
           <div className="relative aspect-video w-full max-w-5xl">
             <VideoPlayer
               src={playableUrl}
-              title={`${item.title} episode ${episode}`}
+              title={`${selectedSeason.title} episode ${selectedEpisodeNumber}`}
             />
             <button
               type="button"
