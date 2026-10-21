@@ -4,7 +4,6 @@ import { AnimeBrowser } from '../components/features/AnimeBrowser';
 import { VideoPlayer } from '../components/features/VideoPlayer';
 import { Badge } from '../components/ui/Badge';
 import { Button } from '../components/ui/Button';
-import { Image } from '../components/ui/Image';
 import { useAnimeDetails } from '../hooks/useAnime';
 import { useAnimeLibrary } from '../hooks/useAnimeLibrary';
 import { getEpisodeUrl } from '../services/anime';
@@ -79,12 +78,13 @@ function AnimeDetailsPage({ id }: { id: string }) {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(240px,1fr)]">
         <section>
           <div className="flex flex-col gap-6 sm:flex-row">
-            <Image
+            <img
               src={item.poster}
               alt={`${item.title} poster`}
-              fallback="/placeholder-poster.svg"
-              aspectRatio="portrait"
-              className="w-full rounded-xl object-cover sm:w-64"
+              className="w-full max-w-xs rounded-xl object-contain sm:w-64"
+              onError={(e) => {
+                (e.currentTarget as HTMLImageElement).src = '/placeholder-poster.svg';
+              }}
             />
             <div className="space-y-4">
               <div className="flex flex-wrap gap-2">
