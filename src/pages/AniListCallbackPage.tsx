@@ -7,14 +7,20 @@ export function AniListCallbackPage() {
   const started = useRef(false);
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    try {
-      anilistAPI.completeConnection();
-      window.location.replace('/watchlist?anilist=connected');
-    } catch (callbackError: unknown) {
-      setError(callbackError instanceof Error ? callbackError.message : 'Could not finish AniList sign-in.');
-    }
+    let cancelled = false;
+    (async () => {
+      if (started.current || cancelled) return;
+      started.current = true;
+      try {
+        await anilistAPI.completeConnection();
+        if (!cancelled) window.location.replace('/watchlist?anilist=connected');
+      } catch (callbackError: unknown) {
+        if (!cancelled) {
+          setError(callbackError instanceof Error ? callbackError.message : 'Could not finish AniList sign-in.');
+        }
+      }
+    })();
+    return () => { cancelled = true; };
   }, []);
 
   return (

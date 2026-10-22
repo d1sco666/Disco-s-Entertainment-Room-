@@ -2,8 +2,13 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "entertainment-room-666",
   "compatibility_date": "2026-10-19",
+  "functions": "./functions",
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
-  }
+  },
+  "vars": {
+    "ANILIST_CLIENT_ID": "54461"
+  },
+  "secrets": ["ANILIST_CLIENT_SECRET"]
 }

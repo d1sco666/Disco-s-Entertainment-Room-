@@ -48,29 +48,32 @@ function disconnectAnilist() {
   window.dispatchEvent(new Event('anilist-auth-changed'));
 }
 
-// Parses an access token from the URL fragment (implicit grant response).
-// Returns null when no token is present. Clears the fragment after reading.
-function readFragmentToken(expectedState: string | null): AniListAuth | null {
-  if (typeof window === 'undefined' || !window.location.hash) return null;
-  const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-  const accessToken = params.get('access_token');
-  const state = params.get('state');
-  const expiresIn = params.get('expires_in');
-  const tokenType = params.get('token_type');
-  if (!accessToken) return null;
-  if (!state || !expectedState || state !== expectedState) return null;
+function getTokenEndpoint() {
+  const origin = window.location.origin;
+  return origin.includes('localhost') || origin.includes('127.0.0.1')
+    ? `${origin}/anilist/token`
+    : '/anilist/token';
+}
 
+async function exchangeCodeForToken(code: string): Promise<AniListAuth> {
+  const response = await fetch(getTokenEndpoint(), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code, redirect_uri: getRedirectUri() }),
+  });
+  if (!response.ok) {
+    const body = await response.text().catch(() => '');
+    throw new Error(`AniList token exchange failed (${response.status})${body ? `: ${body}` : ''}`);
+  }
+  const data = await response.json();
+  if (!data.access_token) {
+    throw new Error('AniList token exchange returned no access token.');
+  }
   const auth: AniListAuth = {
-    accessToken,
-    expiresAt: Date.now() + (expiresIn ? Number(expiresIn) : 365 * 24 * 60 * 60) * 1000,
-    tokenType: tokenType ?? 'Bearer',
+    accessToken: data.access_token,
+    expiresAt: Date.now() + (data.expires_in ? Number(data.expires_in) : 365 * 24 * 60 * 60) * 1000,
+    tokenType: data.token_type ?? 'Bearer',
   };
-
-  // Remove the token fragment so it isn't left in the URL / history.
-  const url = new URL(window.location.href);
-  url.hash = '';
-  window.history.replaceState({}, document.title, url.toString());
-
   return auth;
 }
 
@@ -88,18 +91,27 @@ export const anilistAPI = {
     url.search = new URLSearchParams({
       client_id: CLIENT_ID,
       redirect_uri: getRedirectUri(),
-      response_type: 'token',
+      response_type: 'code',
       state,
     }).toString();
     window.location.assign(url.toString());
   },
 
-  completeConnection() {
+  async completeConnection() {
     const raw = sessionStorage.getItem('entertainment-room-anilist-state');
     sessionStorage.removeItem('entertainment-room-anilist-state');
-    const auth = readFragmentToken(raw ?? null);
-    if (!auth) throw new Error('AniList did not return an access token.');
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+    if (!code || !state || !raw || state !== raw) {
+      throw new Error('AniList did not return a valid authorization code.');
+    }
+    const auth = await exchangeCodeForToken(code);
     saveAuth(auth);
+    // Remove the code/state query params so they aren't left in the URL / history.
+    const url = new URL(window.location.href);
+    url.search = '';
+    window.history.replaceState({}, document.title, url.toString());
   },
 
   disconnect() {
