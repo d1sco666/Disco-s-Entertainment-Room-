@@ -39,14 +39,17 @@ async function handleAnilistToken(request: Request, env: Env): Promise<Response>
   try {
     const response = await fetch(ANILIST_TOKEN_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
         grant_type: 'authorization_code',
         client_id: clientId,
         client_secret: clientSecret,
         code,
         redirect_uri,
-      }).toString(),
+      }),
     });
 
     const responseBody = await response.text();
