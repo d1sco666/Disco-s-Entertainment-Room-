@@ -20,17 +20,14 @@ export const onRequestGet = async ({ request }: { request: Request }) => {
     });
   }
 
-  // PelisMaster's embed requires a signed pass token from /api/player-pass.
-  // We fetch the PelisMaster page server-side to extract the data-pass token,
-  // then exchange it for a JWT pass via /api/player-pass.
-  let passUrl: string | null = null;
   let embedPath: string;
-
   if (type === 'tv' && season && episode) {
     embedPath = `/embed/tv/${tmdbId}/${season}/${episode}`;
   } else {
     embedPath = `/embed/movie/${tmdbId}`;
   }
+
+  let embedUrl: string | null = null;
 
   if (slug) {
     try {
@@ -38,36 +35,30 @@ export const onRequestGet = async ({ request }: { request: Request }) => {
       const pageRes = await fetch(pageUrl, { headers: { Accept: 'text/html' } });
       if (pageRes.ok) {
         const html = await pageRes.text();
-        // data-pass is HTML-encoded: data-pass=&quot;/api/player-pass?t=...&quot;
-        const m = html.match(/data-pass=&quot;([^&]*?)&quot;/);
+        // Extract data-embed attribute from .player div which contains the full iframe with pass token embedded
+        const m = html.match(/class="player"[^>]*data-embed="([^"]*)"/);
         if (m?.[1]) {
-          passUrl = `${PELISMASTER_BASE}${m[1]}`;
+          // Parse the iframe src from the data-embed HTML
+          const embedMatch = m[1].match(/src="([^"]+)"/);
+          if (embedMatch?.[1]) {
+            embedUrl = embedMatch[1];
+          }
         }
       }
     } catch {
-      // pass resolution failed, fall through
+      // page fetch failed, embedUrl stays null
     }
   }
 
-  let passToken: string | null = null;
-  if (passUrl) {
-    try {
-      const passRes = await fetch(passUrl, { headers: { Accept: 'application/json' } });
-      if (passRes.ok) {
-        const data = await passRes.json();
-        if (data.ok && data.pass) {
-          passToken = data.pass;
-        }
-      }
-    } catch {
-      // pass exchange failed, fall through
-    }
+  const finalUrl = new URL(`${EMBED_BASE}${embedPath}?lang=${lang}`);
+  if (embedUrl) {
+    // If we extracted a URL from data-embed, merge its parameters into the final URL
+    const embedParams = new URLSearchParams(new URL(embedUrl).searchParams);
+    finalUrl.searchParams.forEach((val, key) => embedParams.set(key, val));
+    finalUrl.search = embedParams.toString();
   }
 
-  const embedUrl = new URL(`${EMBED_BASE}${embedPath}?lang=${lang}`);
-  if (passToken) embedUrl.searchParams.set('pass', passToken);
-
-  return new Response(JSON.stringify({ ok: true, embedUrl: embedUrl.toString() }), {
+  return new Response(JSON.stringify({ ok: true, embedUrl: finalUrl.toString() }), {
     status: 200,
     headers: {
       'content-type': 'application/json',
