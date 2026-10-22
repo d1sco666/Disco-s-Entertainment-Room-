@@ -7,15 +7,18 @@ import { AnimeCard } from '../components/features/AnimeCard';
 import { useAnimeLibrary } from '../hooks/useAnimeLibrary';
 import { HorizontalCarousel } from '../components/features/HorizontalCarousel';
 import { simklAPI } from '../services/simkl';
+import { anilistAPI } from '../services/anilist';
 
 export function WatchlistPage() {
   const { watchlist, watched, removeFromWatchlist, replaceWatchlist, replaceWatched } = useMediaLibrary();
   const animeLibrary = useAnimeLibrary();
   const [connected, setConnected] = useState(simklAPI.isConnected());
+  const [anilistConnected, setAnilistConnected] = useState(anilistAPI.isConnected());
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const simklRedirectUri = `${window.location.origin}/simkl/callback`;
+  const anilistRedirectUri = `${window.location.origin}/anilist/callback`;
 
   const connect = async () => {
     setError(null);
@@ -23,6 +26,15 @@ export function WatchlistPage() {
       await simklAPI.connect();
     } catch (connectError) {
       setError(connectError instanceof Error ? connectError.message : 'Could not connect to Simkl.');
+    }
+  };
+
+  const connectAniList = async () => {
+    setError(null);
+    try {
+      await anilistAPI.connect();
+    } catch (connectError) {
+      setError(connectError instanceof Error ? connectError.message : 'Could not connect to AniList.');
     }
   };
 
@@ -117,6 +129,52 @@ export function WatchlistPage() {
         </p>
         <p className="mt-2 text-xs text-dark-500">
           Anime uses MyAnimeList IDs when syncing its watchlist and watched history with Simkl.
+        </p>
+        {error && <p className="mt-4 text-sm text-red-400" role="alert">{error}</p>}
+        {syncMessage && <p className="mt-4 text-sm text-emerald-400" role="status">{syncMessage}</p>}
+      </section>
+
+      <section className="mb-10 border border-dark-700 bg-dark-950 p-5" aria-labelledby="anilist-title">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 id="anilist-title" className="flex items-center gap-2 text-lg font-semibold text-white">
+              <a href="https://anilist.co" target="_blank" rel="noopener noreferrer" aria-label="Visit AniList">
+                <img
+                  src="https://anilist.co/img/favicon-128.png"
+                  alt="AniList"
+                  className="h-5 w-5 rounded-sm"
+                />
+                <span>AniList Login</span>
+              </a>
+            </h2>
+            <p className="mt-1 text-sm text-dark-400">
+              {anilistConnected
+                ? 'Connected to AniList.'
+                : 'Connect your AniList account to authorize the app.'}
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {anilistConnected ? (
+              <>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    anilistAPI.disconnect();
+                    setAnilistConnected(false);
+                    setSyncMessage(null);
+                  }}
+                >
+                  Disconnect
+                </Button>
+              </>
+            ) : (
+              <Button onClick={connectAniList}>Connect AniList</Button>
+            )}
+          </div>
+        </div>
+        <p className="mt-3 text-xs text-dark-500">
+          Register this exact URI in your AniList client settings:
+          {' '}<code className="break-all text-dark-300">{anilistRedirectUri}</code>
         </p>
         {error && <p className="mt-4 text-sm text-red-400" role="alert">{error}</p>}
         {syncMessage && <p className="mt-4 text-sm text-emerald-400" role="status">{syncMessage}</p>}

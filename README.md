@@ -60,6 +60,8 @@ npm run dev
 |----------|-------------|----------|
 | `VITE_TMDB_API_KEY` | TMDB v3 API key used by the browser to load catalog metadata | Yes |
 | `VITE_SIMKL_CLIENT_ID` | Public Simkl Auth V2 client ID (the client ID provided for this project is the default) | No |
+| `VITE_ANILIST_CLIENT_ID` | Public AniList OAuth client ID | No |
+| `VITE_ANILIST_CLIENT_SECRET` | AniList OAuth client secret | No |
 | `VITE_AUTH0_DOMAIN` | Auth0 tenant domain for SPA login | No |
 | `VITE_AUTH0_CLIENT_ID` | Auth0 Single Page Application client ID | No |
 | `VITE_AUTH0_AUDIENCE` | Optional Auth0 API audience for access-token requests | No |
