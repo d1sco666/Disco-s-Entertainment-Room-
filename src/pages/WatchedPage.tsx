@@ -38,6 +38,7 @@ export function WatchedPage() {
                   item={entry.item}
                   type="movie"
                   subtitle="Watched"
+                  posterOnly
                   onRemove={() => removeFromWatched('movie', entry.item.id)}
                   removeLabel="Remove from watched history"
                 />

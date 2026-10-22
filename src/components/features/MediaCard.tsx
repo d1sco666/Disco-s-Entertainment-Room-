@@ -17,6 +17,7 @@ interface MediaCardProps {
   removeLabel?: string;
   removeIconOnly?: boolean;
   glossySurface?: boolean;
+  posterOnly?: boolean;
 }
 
 function MediaCardComponent({
@@ -27,6 +28,7 @@ function MediaCardComponent({
   removeLabel = 'Remove from list',
   removeIconOnly = false,
   glossySurface = false,
+  posterOnly = false,
 }: MediaCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
   const { watched: watchedItems } = useMediaLibrary();
@@ -164,29 +166,31 @@ function MediaCardComponent({
           </div>
         </div>
 
-        <CardContent className={`flex-1 flex flex-col p-4 ${glossySurface ? 'poster-card-gloss' : ''}`}>
-          <h3 className="font-semibold text-dark-900 dark:text-white line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
-            {title}
-          </h3>
-          <div className="mt-1.5 flex items-center gap-2 text-sm text-dark-500 dark:text-dark-400">
-            <span>{year}</span>
-            <span aria-hidden="true">•</span>
-            <span title={runtimeError || undefined}>
-              {isMovie
-                ? runtime > 0
-                  ? formatRuntime(runtime)
-                  : runtimeError
-                    ? 'Runtime failed to load'
-                    : 'Loading runtime…'
-                : numberOfSeasons > 0
-                  ? `${numberOfSeasons} seasons`
-                  : runtimeError
-                    ? 'Season count unavailable'
-                    : 'Loading seasons…'}
-            </span>
-          </div>
-          {subtitle && <p className="mt-1 text-sm text-primary-600 dark:text-primary-400 line-clamp-2">{subtitle}</p>}
-        </CardContent>
+        {!posterOnly && (
+          <CardContent className={`flex-1 flex flex-col p-4 ${glossySurface ? 'poster-card-gloss' : ''}`}>
+            <h3 className="font-semibold text-dark-900 dark:text-white line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+              {title}
+            </h3>
+            <div className="mt-1.5 flex items-center gap-2 text-sm text-dark-500 dark:text-dark-400">
+              <span>{year}</span>
+              <span aria-hidden="true">•</span>
+              <span title={runtimeError || undefined}>
+                {isMovie
+                  ? runtime > 0
+                    ? formatRuntime(runtime)
+                    : runtimeError
+                      ? 'Runtime failed to load'
+                      : 'Loading runtime…'
+                  : numberOfSeasons > 0
+                    ? `${numberOfSeasons} seasons`
+                    : runtimeError
+                      ? 'Season count unavailable'
+                      : 'Loading seasons…'}
+              </span>
+            </div>
+            {subtitle && <p className="mt-1 text-sm text-primary-600 dark:text-primary-400 line-clamp-2">{subtitle}</p>}
+          </CardContent>
+        )}
       </Link>
       {item.simklHref && (
         <a
