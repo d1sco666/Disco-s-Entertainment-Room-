@@ -9,7 +9,7 @@ import { useMediaTrailer, useTVShowDetails, useSeasonDetails } from '../hooks/us
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { formatYear, formatDate, formatRuntime } from '../utils/helpers';
 import { getVimeusEpisodeEmbedUrl } from '../utils/vimeus';
-import { getVidstuckEpisodeEmbedUrl, getZxcstreamEpisodePlayerUrl, getPelisMasterEpisodeEmbedUrl, type DubLanguage } from '../utils/additionalPlayers';
+import { getVidstuckEpisodeEmbedUrl, getZxcstreamEpisodePlayerUrl, getPelisMasterEpisodeEmbedUrl, slugify, type DubLanguage } from '../utils/additionalPlayers';
 import { useState } from 'react';
 import type { CineSrcEpisode } from '../types';
 
@@ -68,6 +68,7 @@ export function TVShowPage() {
   const cinesrcEmbedUrl = show.tmdbId && selectedEpisode
     ? `https://cinesrc.st/embed/tv/${encodeURIComponent(String(show.tmdbId))}?s=${selectedSeason}&e=${selectedEpisode.episodeNumber}`
     : null;
+  const pelisMasterSlug = show.tmdbId ? slugify(show.name, Number(formatYear(show.firstAirDate))) : undefined;
   const isSaved = isInWatchlist('tv', show.id);
   const showWatched = isWatched('tv', show.id);
   const selectedEpisodeRef = selectedEpisode
@@ -134,7 +135,8 @@ export function TVShowPage() {
                     show.tmdbId,
                     selectedSeason,
                     selectedEpisode.episodeNumber,
-                    lang
+                    lang,
+                    pelisMasterSlug
                   );
                 },
                 languageOptions: [

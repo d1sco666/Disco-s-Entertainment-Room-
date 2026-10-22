@@ -10,7 +10,7 @@ import { useMediaTrailer, useMovieDetails } from '../hooks/useMedia';
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { formatYear, formatRuntime, formatDate } from '../utils/helpers';
 import { getVimeusMovieEmbedUrl } from '../utils/vimeus';
-import { getVidstuckMovieEmbedUrl, getZxcstreamMoviePlayerUrl, getPelisMasterMovieEmbedUrl, type DubLanguage } from '../utils/additionalPlayers';
+import { getVidstuckMovieEmbedUrl, getZxcstreamMoviePlayerUrl, getPelisMasterMovieEmbedUrl, slugify, type DubLanguage } from '../utils/additionalPlayers';
 
 export function MoviePage() {
   const { id } = useParams<{ id: string }>();
@@ -50,6 +50,7 @@ export function MoviePage() {
   const cinesrcEmbedUrl = movie.tmdbId
     ? `https://cinesrc.st/embed/movie/${encodeURIComponent(String(movie.tmdbId))}`
     : null;
+  const pelisMasterSlug = movie.tmdbId ? slugify(movie.title, Number(formatYear(movie.releaseDate))) : undefined;
   const isSaved = isInWatchlist('movie', movie.id);
   const hasWatched = isWatched('movie', movie.id);
   const ageRating = movie.ageRating || movie.contentRating || movie.certification || 'N/A';
@@ -100,7 +101,7 @@ export function MoviePage() {
             name: 'PelisMaster',
             getSrc: (dubLanguage) => {
               const lang = (dubLanguage ?? 'LAT') as DubLanguage;
-              return getPelisMasterMovieEmbedUrl(movie.tmdbId, lang);
+              return getPelisMasterMovieEmbedUrl(movie.tmdbId, lang, pelisMasterSlug);
             },
             languageOptions: [
               { value: 'LAT', label: 'Latino' },
