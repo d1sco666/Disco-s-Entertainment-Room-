@@ -10,7 +10,7 @@ import { useMediaTrailer, useMovieDetails } from '../hooks/useMedia';
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { formatYear, formatRuntime, formatDate } from '../utils/helpers';
 import { getVimeusMovieEmbedUrl } from '../utils/vimeus';
-import { getVidstuckMovieEmbedUrl, getZxcstreamMoviePlayerUrl } from '../utils/additionalPlayers';
+import { getVidstuckMovieEmbedUrl, getZxcstreamMoviePlayerUrl, getPelisMasterMovieEmbedUrl, type DubLanguage } from '../utils/additionalPlayers';
 
 export function MoviePage() {
   const { id } = useParams<{ id: string }>();
@@ -92,6 +92,20 @@ export function MoviePage() {
             languageOptions: [
               { value: 'en', label: 'English' },
               { value: 'es', label: 'Español' },
+            ],
+            unavailableReason: !movie.tmdbId ? 'A TMDB ID is required' : undefined,
+          },
+          {
+            id: 'pelmaster',
+            name: 'PelisMaster',
+            getSrc: (dubLanguage) => {
+              const lang = (dubLanguage ?? 'LAT') as DubLanguage;
+              return getPelisMasterMovieEmbedUrl(movie.tmdbId, lang);
+            },
+            languageOptions: [
+              { value: 'LAT', label: 'Latino' },
+              { value: 'ESP', label: 'Castellano' },
+              { value: 'SUB', label: 'Subtitulado' },
             ],
             unavailableReason: !movie.tmdbId ? 'A TMDB ID is required' : undefined,
           },

@@ -9,7 +9,7 @@ import { useMediaTrailer, useTVShowDetails, useSeasonDetails } from '../hooks/us
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { formatYear, formatDate, formatRuntime } from '../utils/helpers';
 import { getVimeusEpisodeEmbedUrl } from '../utils/vimeus';
-import { getVidstuckEpisodeEmbedUrl, getZxcstreamEpisodePlayerUrl } from '../utils/additionalPlayers';
+import { getVidstuckEpisodeEmbedUrl, getZxcstreamEpisodePlayerUrl, getPelisMasterEpisodeEmbedUrl, type DubLanguage } from '../utils/additionalPlayers';
 import { useState } from 'react';
 import type { CineSrcEpisode } from '../types';
 
@@ -125,6 +125,25 @@ export function TVShowPage() {
               ],
               unavailableReason: !show.tmdbId ? 'A TMDB ID is required' : undefined,
             },
+              {
+                id: 'pelmaster',
+                name: 'PelisMaster',
+                getSrc: (dubLanguage) => {
+                  const lang = (dubLanguage ?? 'LAT') as DubLanguage;
+                  return getPelisMasterEpisodeEmbedUrl(
+                    show.tmdbId,
+                    selectedSeason,
+                    selectedEpisode.episodeNumber,
+                    lang
+                  );
+                },
+                languageOptions: [
+                  { value: 'LAT', label: 'Latino' },
+                  { value: 'ESP', label: 'Castellano' },
+                  { value: 'SUB', label: 'Subtitulado' },
+                ],
+                unavailableReason: !show.tmdbId ? 'A TMDB ID is required' : undefined,
+              },
           ]}
           onClose={() => setShowPlayer(false)}
         />

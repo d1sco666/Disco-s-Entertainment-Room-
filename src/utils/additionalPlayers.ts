@@ -1,4 +1,16 @@
-export type DubLanguage = 'en' | 'es';
+export type DubLanguage = 'en' | 'es' | 'ESP' | 'LAT' | 'SUB';
+
+const PELISMASTER_EMBED_BASE = 'https://api-encrypted.moviemaster.lat';
+
+export function getPelisMasterMovieEmbedUrl(tmdbId?: number, lang: DubLanguage = 'LAT') {
+  validateMediaIds(tmdbId);
+  return `${PELISMASTER_EMBED_BASE}/embed/movie/${tmdbId}?lang=${lang}`;
+}
+
+export function getPelisMasterEpisodeEmbedUrl(tmdbId?: number, season?: number, episode?: number, lang: DubLanguage = 'LAT') {
+  validateMediaIds(tmdbId, season, episode);
+  return `${PELISMASTER_EMBED_BASE}/embed/tv/${tmdbId}/${season}/${episode}?lang=${lang}`;
+}
 
 function validateMediaIds(tmdbId: number | undefined, season?: number, episode?: number) {
   if (!tmdbId || !Number.isSafeInteger(tmdbId) || tmdbId < 1) {
