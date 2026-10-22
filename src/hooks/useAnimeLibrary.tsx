@@ -29,13 +29,13 @@ function validAnimeTitle(value: unknown): value is AnimeTitle {
   return typeof item.id === 'string'
     && (typeof item.malId === 'number' || item.malId === undefined)
     && typeof item.title === 'string'
-    && typeof item.titleJapanese === 'string'
+    && (typeof item.native === 'string' || item.native === undefined)
     && typeof item.year === 'number'
     && typeof item.overview === 'string'
     && typeof item.poster === 'string'
-    && typeof item.banner === 'string'
+    && (typeof item.backdrop === 'string' || item.backdrop === undefined)
     && typeof item.score === 'number'
-    && typeof item.ageRating === 'string'
+    && (typeof item.rating === 'string' || item.rating === undefined)
     && Array.isArray(item.genres)
     && item.genres.every((genre) => typeof genre === 'string');
 }

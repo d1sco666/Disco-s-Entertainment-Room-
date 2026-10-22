@@ -5,6 +5,7 @@ import { MediaCard } from '../components/features/MediaCard';
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { AnimeCard } from '../components/features/AnimeCard';
 import { useAnimeLibrary } from '../hooks/useAnimeLibrary';
+import { HorizontalCarousel } from '../components/features/HorizontalCarousel';
 import { simklAPI } from '../services/simkl';
 
 export function WatchlistPage() {
@@ -130,50 +131,53 @@ export function WatchlistPage() {
       {moviesWatchlist.length > 0 && (
         <section className="mb-10" aria-labelledby="movies-watchlist-title">
           <h2 id="movies-watchlist-title" className="mb-5 text-2xl font-bold text-white">Movies Watchlist</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
+          <HorizontalCarousel label="Movies Watchlist">
             {moviesWatchlist.map(({ item }) => (
-              <MediaCard
-                key={item.id}
-                item={item}
-                type="movie"
-                onRemove={() => removeFromWatchlist('movie', item.id)}
-                removeLabel="Remove from Watchlist"
-              />
+              <div className="w-28 flex-none snap-start sm:w-32 lg:w-36" key={`movie-${item.id}`}>
+                <MediaCard
+                  item={item}
+                  type="movie"
+                  onRemove={() => removeFromWatchlist('movie', item.id)}
+                  removeLabel="Remove from Watchlist"
+                />
+              </div>
             ))}
-          </div>
+          </HorizontalCarousel>
         </section>
       )}
 
       {tvShowsWatchlist.length > 0 && (
         <section className="mb-10" aria-labelledby="tv-shows-watchlist-title">
           <h2 id="tv-shows-watchlist-title" className="mb-5 text-2xl font-bold text-white">TV Shows Watchlist</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
+          <HorizontalCarousel label="TV Shows Watchlist">
             {tvShowsWatchlist.map(({ item }) => (
-              <MediaCard
-                key={item.id}
-                item={item}
-                type="tv"
-                onRemove={() => removeFromWatchlist('tv', item.id)}
-                removeLabel="Remove from Watchlist"
-              />
+              <div className="w-28 flex-none snap-start sm:w-32 lg:w-36" key={`tv-${item.id}`}>
+                <MediaCard
+                  item={item}
+                  type="tv"
+                  onRemove={() => removeFromWatchlist('tv', item.id)}
+                  removeLabel="Remove from Watchlist"
+                />
+              </div>
             ))}
-          </div>
+          </HorizontalCarousel>
         </section>
       )}
 
       {animeLibrary.watchlist.length > 0 && (
         <section className="mb-10" aria-labelledby="anime-watchlist-title">
           <h2 id="anime-watchlist-title" className="mb-5 text-2xl font-bold text-white">Anime Watchlist</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
+          <HorizontalCarousel label="Anime Watchlist">
             {animeLibrary.watchlist.map((item) => (
-              <AnimeCard
-                key={item.id}
-                item={item}
-                onRemove={() => animeLibrary.removeFromWatchlist(item.id)}
-                removeLabel="Remove from Anime Watchlist"
-              />
+              <div className="w-28 flex-none snap-start sm:w-32 lg:w-36" key={item.id}>
+                <AnimeCard
+                  item={item}
+                  onRemove={() => animeLibrary.removeFromWatchlist(item.id)}
+                  removeLabel="Remove from Anime Watchlist"
+                />
+              </div>
             ))}
-          </div>
+          </HorizontalCarousel>
         </section>
       )}
       {animeLibrary.storageError && <p className="mt-4 text-sm text-red-400" role="alert">{animeLibrary.storageError}</p>}
