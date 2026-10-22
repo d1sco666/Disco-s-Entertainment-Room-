@@ -52,6 +52,9 @@ export function WatchlistPage() {
     }
   };
 
+  const moviesWatchlist = watchlist.filter((entry) => entry.type === 'movie');
+  const tvShowsWatchlist = watchlist.filter((entry) => entry.type === 'tv');
+
   return (
     <div className="mx-auto min-h-screen max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
@@ -73,8 +76,8 @@ export function WatchlistPage() {
                   alt="Simkl"
                   className="h-5 w-5 rounded-sm"
                 />
+                <span>Simkl Sync</span>
               </a>
-              <span>Simkl Sync</span>
             </h2>
             <p className="mt-1 text-sm text-dark-400">
               {connected
@@ -117,25 +120,49 @@ export function WatchlistPage() {
         {error && <p className="mt-4 text-sm text-red-400" role="alert">{error}</p>}
         {syncMessage && <p className="mt-4 text-sm text-emerald-400" role="status">{syncMessage}</p>}
       </section>
+
       {watchlist.length === 0 && animeLibrary.watchlist.length === 0 ? (
         <p className="border border-dark-800 bg-black px-6 py-12 text-center text-dark-400">
           Your watchlist is empty. Add movies, TV shows, or anime from their detail pages.
         </p>
-      ) : watchlist.length > 0 ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
-          {watchlist.map(({ type, item }) => (
-            <MediaCard
-              key={`${type}-${item.id}`}
-              item={item}
-              type={type}
-              onRemove={() => removeFromWatchlist(type, item.id)}
-              removeLabel="Remove from Watchlist"
-            />
-          ))}
-        </div>
       ) : null}
+
+      {moviesWatchlist.length > 0 && (
+        <section className="mb-10" aria-labelledby="movies-watchlist-title">
+          <h2 id="movies-watchlist-title" className="mb-5 text-2xl font-bold text-white">Movies Watchlist</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
+            {moviesWatchlist.map(({ item }) => (
+              <MediaCard
+                key={item.id}
+                item={item}
+                type="movie"
+                onRemove={() => removeFromWatchlist('movie', item.id)}
+                removeLabel="Remove from Watchlist"
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {tvShowsWatchlist.length > 0 && (
+        <section className="mb-10" aria-labelledby="tv-shows-watchlist-title">
+          <h2 id="tv-shows-watchlist-title" className="mb-5 text-2xl font-bold text-white">TV Shows Watchlist</h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
+            {tvShowsWatchlist.map(({ item }) => (
+              <MediaCard
+                key={item.id}
+                item={item}
+                type="tv"
+                onRemove={() => removeFromWatchlist('tv', item.id)}
+                removeLabel="Remove from Watchlist"
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       {animeLibrary.watchlist.length > 0 && (
-        <section className="mt-10" aria-labelledby="anime-watchlist-title">
+        <section className="mb-10" aria-labelledby="anime-watchlist-title">
           <h2 id="anime-watchlist-title" className="mb-5 text-2xl font-bold text-white">Anime Watchlist</h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
             {animeLibrary.watchlist.map((item) => (

@@ -26,7 +26,7 @@ export function AnimePage() {
 
 function AnimeDetailsPage({ id }: { id: string }) {
   const { item, seasons, loading, error } = useAnimeDetails(id);
-  const { watchlist, toggleWatchlist, markWatched, addToContinueWatching } = useAnimeLibrary();
+  const { watchlist, toggleWatchlist, markWatched, removeFromWatched, addToContinueWatching, isAnimeWatched } = useAnimeLibrary();
   const [seasonIndex, setSeasonIndex] = useState(0);
   const [episode, setEpisode] = useState(1);
   const [language, setLanguage] = useState<'sub' | 'dub'>('sub');
@@ -125,7 +125,9 @@ function AnimeDetailsPage({ id }: { id: string }) {
                 <Button variant="outline" aria-pressed={watchlist.some((saved) => saved.id === selectedSeason.id)} onClick={() => toggleWatchlist(selectedSeason)}>
                   {watchlist.some((saved) => saved.id === selectedSeason.id) ? 'Remove from Anime Watchlist' : 'Add to Anime Watchlist'}
                 </Button>
-                <Button variant="outline" onClick={() => markWatched(selectedSeason)}>Mark as Watched</Button>
+                <Button variant="outline" aria-pressed={isAnimeWatched(selectedSeason.id)} onClick={() => isAnimeWatched(selectedSeason.id) ? removeFromWatched(selectedSeason.id) : markWatched(selectedSeason)}>
+                  {isAnimeWatched(selectedSeason.id) ? 'Mark as Unwatched' : 'Mark as Watched'}
+                </Button>
               </div>
 
             </div>

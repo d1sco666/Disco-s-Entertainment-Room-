@@ -9,7 +9,7 @@ import { useMediaTrailer, useTVShowDetails, useSeasonDetails } from '../hooks/us
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { formatYear, formatDate, formatRuntime } from '../utils/helpers';
 import { getVimeusEpisodeEmbedUrl } from '../utils/vimeus';
-import { getVidstuckEpisodeEmbedUrl, getZxcstreamEpisodePlayerUrl, getPelisMasterEpisodeEmbedUrl, slugify, type DubLanguage } from '../utils/additionalPlayers';
+import { getVidstuckEpisodeEmbedUrl, getZxcstreamEpisodePlayerUrl } from '../utils/additionalPlayers';
 import { useState } from 'react';
 import type { CineSrcEpisode } from '../types';
 
@@ -68,7 +68,6 @@ export function TVShowPage() {
   const cinesrcEmbedUrl = show.tmdbId && selectedEpisode
     ? `https://cinesrc.st/embed/tv/${encodeURIComponent(String(show.tmdbId))}?s=${selectedSeason}&e=${selectedEpisode.episodeNumber}`
     : null;
-  const pelisMasterSlug = show.tmdbId ? slugify(show.name, Number(formatYear(show.firstAirDate))) : undefined;
   const isSaved = isInWatchlist('tv', show.id);
   const showWatched = isWatched('tv', show.id);
   const selectedEpisodeRef = selectedEpisode
@@ -126,26 +125,6 @@ export function TVShowPage() {
               ],
               unavailableReason: !show.tmdbId ? 'A TMDB ID is required' : undefined,
             },
-              {
-                id: 'pelmaster',
-                name: 'PelisMaster',
-                getSrc: (dubLanguage) => {
-                  const lang = (dubLanguage ?? 'LAT') as DubLanguage;
-                  return getPelisMasterEpisodeEmbedUrl(
-                    show.tmdbId,
-                    selectedSeason,
-                    selectedEpisode.episodeNumber,
-                    lang,
-                    pelisMasterSlug
-                  );
-                },
-                languageOptions: [
-                  { value: 'LAT', label: 'Latino' },
-                  { value: 'ESP', label: 'Castellano' },
-                  { value: 'SUB', label: 'Subtitulado' },
-                ],
-                unavailableReason: !show.tmdbId ? 'A TMDB ID is required' : undefined,
-              },
           ]}
           onClose={() => setShowPlayer(false)}
         />

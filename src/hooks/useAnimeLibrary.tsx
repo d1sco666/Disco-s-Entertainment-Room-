@@ -14,6 +14,7 @@ interface AnimeLibraryValue {
   removeFromWatchlist: (id: string) => void;
   markWatched: (item: AnimeTitle) => void;
   removeFromWatched: (id: string) => void;
+  isAnimeWatched: (id: string) => boolean;
   addToContinueWatching: (item: AnimeTitle, episode: number) => void;
   removeFromContinueWatching: (id: string) => void;
   replaceWatchlist: (items: AnimeTitle[]) => void;
@@ -123,6 +124,9 @@ export function AnimeLibraryProvider({ children }: { children: ReactNode }) {
   const removeFromWatched = useCallback((id: string) => {
     setWatched((current) => current.filter((entry) => entry.item.id !== id));
   }, []);
+  const isAnimeWatched = useCallback((id: string) => {
+    return watched.some((entry) => entry.item.id === id);
+  }, [watched]);
   const addToContinueWatching = useCallback((item: AnimeTitle, episode: number) => {
     setContinueWatching((current) => [
       { item, episode, lastWatchedAt: Date.now() },
@@ -144,6 +148,7 @@ export function AnimeLibraryProvider({ children }: { children: ReactNode }) {
     removeFromWatchlist,
     markWatched,
     removeFromWatched,
+    isAnimeWatched,
     addToContinueWatching,
     removeFromContinueWatching,
     replaceWatchlist,
@@ -157,6 +162,7 @@ export function AnimeLibraryProvider({ children }: { children: ReactNode }) {
     removeFromWatchlist,
     markWatched,
     removeFromWatched,
+    isAnimeWatched,
     addToContinueWatching,
     removeFromContinueWatching,
     replaceWatchlist,
