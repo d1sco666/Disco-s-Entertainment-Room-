@@ -34,14 +34,12 @@ export function WatchedPage() {
           <HorizontalCarousel label="Watched Movies">
             {moviesWatched.map((entry) => (
               <div className="w-28 flex-none snap-start sm:w-32 lg:w-36" key={`movie-${entry.item.id}`}>
-                <MediaCard
-                  item={entry.item}
-                  type="movie"
-                  subtitle="Watched"
-                  posterOnly
-                  onRemove={() => removeFromWatched('movie', entry.item.id)}
-                  removeLabel="Remove from watched history"
-                />
+            <MediaCard
+              item={entry.item}
+              type="movie"
+              subtitle="Watched"
+              posterOnly
+            />
               </div>
             ))}
           </HorizontalCarousel>
