@@ -72,10 +72,11 @@ async function handleAnilistToken(request: Request, env: Env): Promise<Response>
 export interface Env {
   ANILIST_CLIENT_ID?: string;
   ANILIST_CLIENT_SECRET?: string;
+  ASSETS: any;
 }
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
     // CORS preflight
@@ -91,4 +92,4 @@ export default {
     // Fall back to serving static assets (Pages SPA behavior)
     return env.ASSETS?.fetch(request) ?? new Response('Not found', { status: 404 });
   },
-} satisfies ExportedHandler<Env>;
+};
