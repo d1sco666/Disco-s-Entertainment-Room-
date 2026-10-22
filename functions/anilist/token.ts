@@ -46,14 +46,14 @@ export const onRequestPost = async ({ request, env }) => {
   try {
     const response = await fetch(ANILIST_TOKEN_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
         grant_type: 'authorization_code',
         client_id: clientId,
         client_secret: clientSecret,
         code,
         redirect_uri,
-      }),
+      }).toString(),
     });
 
     const responseBody = await response.text();
