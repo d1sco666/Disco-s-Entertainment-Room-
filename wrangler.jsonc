@@ -9,8 +9,5 @@
   "vars": {
     "MAL_CLIENT_ID": "8d96d1c3e67e9cbeb6acb455a254ebcd",
     "MAL_CLIENT_SECRET": "c09752bc0f039270b78fb4ad9b197dd580a11d3e72f8e16f114a3bf3df8d3edc"
-  },
-  "functions": {
-    "directory": "./functions"
   }
 }
