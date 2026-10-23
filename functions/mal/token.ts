@@ -1,4 +1,4 @@
-const ANILIST_TOKEN_URL = 'https://anilist.co/api/v2/oauth/token';
+const MAL_TOKEN_URL = 'https://api.myanimelist.net/v2/oauth2/token';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,17 +15,17 @@ export const onRequestOptions = async () => {
 };
 
 export const onRequestPost = async ({ request, env }) => {
-  const clientId = env.ANILIST_CLIENT_ID ?? '54461';
-  const clientSecret = env.ANILIST_CLIENT_SECRET;
+  const clientId = env.MAL_CLIENT_ID ?? '8d96d1c3e67e9cbeb6acb455a254ebcd';
+  const clientSecret = env.MAL_CLIENT_SECRET;
 
   if (!clientSecret) {
     return new Response(
-      JSON.stringify({ error: 'AniList OAuth is not configured on the server.' }),
+      JSON.stringify({ error: 'MyAnimeList OAuth is not configured on the server.' }),
       { status: 500, headers: { 'content-type': 'application/json', ...corsHeaders } },
     );
   }
 
-  let body: { code?: string; redirect_uri?: string };
+  let body: { code?: string; redirect_uri?: string; refresh_token?: string; grant_type?: string };
   try {
     body = await request.json();
   } catch {
@@ -35,24 +35,23 @@ export const onRequestPost = async ({ request, env }) => {
     );
   }
 
-  const { code, redirect_uri } = body;
-  if (!code || !redirect_uri) {
+  const { code, redirect_uri, refresh_token, grant_type } = body;
+  if (!grant_type || (!code && !refresh_token)) {
     return new Response(
-      JSON.stringify({ error: 'Missing code or redirect_uri.' }),
+      JSON.stringify({ error: 'Missing grant_type and code/refresh_token.' }),
       { status: 400, headers: { 'content-type': 'application/json', ...corsHeaders } },
     );
   }
 
   try {
-    const response = await fetch(ANILIST_TOKEN_URL, {
+    const response = await fetch(MAL_TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
-        grant_type: 'authorization_code',
+        grant_type,
         client_id: clientId,
         client_secret: clientSecret,
-        code,
-        redirect_uri,
+        ...(code ? { code, redirect_uri } : { refresh_token }),
       }).toString(),
     });
 
@@ -70,7 +69,7 @@ export const onRequestPost = async ({ request, env }) => {
     });
   } catch {
     return new Response(
-      JSON.stringify({ error: 'AniList token exchange failed.' }),
+      JSON.stringify({ error: 'MyAnimeList token exchange failed.' }),
       { status: 502, headers: { 'content-type': 'application/json', ...corsHeaders } },
     );
   }
