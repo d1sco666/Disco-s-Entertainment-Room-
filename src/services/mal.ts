@@ -131,6 +131,7 @@ export const malAPI = {
       state: pending.state,
       code_challenge: challenge,
       code_challenge_method: 'S256',
+      scope: 'read write',
     }).toString();
     window.location.assign(url.toString());
   },
