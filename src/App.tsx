@@ -12,6 +12,8 @@ const MoviePage = lazy(() => import('./pages/MoviePage').then(({ MoviePage }) =>
 const TVShowPage = lazy(() => import('./pages/TVShowPage').then(({ TVShowPage }) => ({ default: TVShowPage })));
 const WatchlistPage = lazy(() => import('./pages/WatchlistPage').then(({ WatchlistPage }) => ({ default: WatchlistPage })));
 const WatchedPage = lazy(() => import('./pages/WatchedPage').then(({ WatchedPage }) => ({ default: WatchedPage })));
+const AnimeWatchlistPage = lazy(() => import('./pages/AnimeWatchlistPage').then(({ AnimeWatchlistPage }) => ({ default: AnimeWatchlistPage })));
+const AnimeWatchedPage = lazy(() => import('./pages/AnimeWatchedPage').then(({ AnimeWatchedPage }) => ({ default: AnimeWatchedPage })));
 const SimklCallbackPage = lazy(() => import('./pages/SimklCallbackPage').then(({ SimklCallbackPage }) => ({ default: SimklCallbackPage })));
 const NotFound = lazy(() => import('./pages/NotFound').then(({ NotFound }) => ({ default: NotFound })));
 
@@ -29,6 +31,8 @@ function App() {
           <Route path="tv-shows" element={<TVShowsPage />} />
           <Route path="anime" element={<AnimePage />} />
           <Route path="anime/:id" element={<AnimePage />} />
+          <Route path="anime/watchlist" element={<AnimeWatchlistPage />} />
+          <Route path="anime/watched" element={<AnimeWatchedPage />} />
           <Route path="watchlist" element={<WatchlistPage />} />
           <Route path="watched" element={<WatchedPage />} />
           <Route path="simkl/callback" element={<SimklCallbackPage />} />

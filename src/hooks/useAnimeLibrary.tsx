@@ -43,11 +43,13 @@ function validAnimeTitle(value: unknown): value is AnimeTitle {
 function readCollection<T>(key: string, valid: (value: unknown) => value is T): T[] {
   const stored = window.localStorage.getItem(key);
   if (!stored) return [];
-  const parsed: unknown = JSON.parse(stored);
-  if (!Array.isArray(parsed) || !parsed.every(valid)) {
-    throw new Error('Saved anime data is invalid and could not be loaded.');
+  try {
+    const parsed: unknown = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(valid);
+  } catch {
+    return [];
   }
-  return parsed;
 }
 
 function isWatched(value: unknown): value is AnimeWatchHistoryItem {

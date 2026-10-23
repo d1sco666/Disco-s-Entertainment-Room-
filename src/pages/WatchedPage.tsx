@@ -1,13 +1,10 @@
 import { Link } from 'react-router-dom';
 import { MediaCard } from '../components/features/MediaCard';
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
-import { AnimeCard } from '../components/features/AnimeCard';
-import { useAnimeLibrary } from '../hooks/useAnimeLibrary';
 import { HorizontalCarousel } from '../components/features/HorizontalCarousel';
 
 export function WatchedPage() {
-  const { watched, removeFromWatched } = useMediaLibrary();
-  const animeLibrary = useAnimeLibrary();
+  const { watched, removeFromWatched, storageError } = useMediaLibrary();
 
   const moviesWatched = watched.filter((entry) => entry.type === 'movie');
   const tvShowsWatched = watched.filter((entry) => entry.type === 'tv');
@@ -22,9 +19,9 @@ export function WatchedPage() {
         <Link to="/watchlist" className="text-sm font-medium text-primary-400 hover:underline">Sync with Simkl</Link>
       </div>
 
-      {watched.length === 0 && animeLibrary.watched.length === 0 ? (
+      {watched.length === 0 ? (
         <p className="border border-dark-800 bg-black px-6 py-12 text-center text-dark-400">
-          Nothing marked watched yet. Mark movies, TV episodes, or anime from their detail pages.
+          Nothing marked watched yet. Mark movies or TV episodes from their detail pages.
         </p>
       ) : null}
 
@@ -69,24 +66,7 @@ export function WatchedPage() {
           </HorizontalCarousel>
         </section>
       )}
-
-      {animeLibrary.watched.length > 0 && (
-        <section className="mb-10" aria-labelledby="anime-watched-title">
-          <h2 id="anime-watched-title" className="mb-5 text-2xl font-bold text-white">Watched Anime</h2>
-          <HorizontalCarousel label="Watched Anime">
-            {animeLibrary.watched.map(({ item }) => (
-              <div className="w-28 flex-none snap-start sm:w-32 lg:w-36" key={`anime-${item.id}`}>
-                <AnimeCard
-                  item={item}
-                  onRemove={() => animeLibrary.removeFromWatched(item.id)}
-                  removeLabel="Remove from watched anime"
-                />
-              </div>
-            ))}
-          </HorizontalCarousel>
-        </section>
-      )}
-      {animeLibrary.storageError && <p className="mt-4 text-sm text-red-400" role="alert">{animeLibrary.storageError}</p>}
+      {storageError && <p className="mt-4 text-sm text-red-400" role="alert">{storageError}</p>}
     </div>
   );
 }

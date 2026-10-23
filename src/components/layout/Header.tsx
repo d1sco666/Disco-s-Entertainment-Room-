@@ -93,6 +93,12 @@ export function Header() {
             <Link to="/anime" className="hidden sm:block px-3 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-dark-100 dark:hover:bg-dark-800">
               Anime
             </Link>
+            <Link to="/anime/watchlist" className="hidden sm:block px-3 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-dark-100 dark:hover:bg-dark-800">
+              Anime Watchlist
+            </Link>
+            <Link to="/anime/watched" className="hidden sm:block px-3 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-dark-100 dark:hover:bg-dark-800">
+              Anime Watched
+            </Link>
             <Link to="/watchlist" className="hidden sm:block px-3 py-2 text-sm font-medium text-dark-700 dark:text-dark-300 hover:text-primary-600 dark:hover:text-primary-400 transition-colors rounded-lg hover:bg-dark-100 dark:hover:bg-dark-800">
               Watchlist
             </Link>
@@ -168,6 +174,8 @@ export function Header() {
               <Link to="/movies" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">Movies</Link>
               <Link to="/tv-shows" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">TV Shows</Link>
               <Link to="/anime" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">Anime</Link>
+              <Link to="/anime/watchlist" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">Anime Watchlist</Link>
+              <Link to="/anime/watched" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">Anime Watched</Link>
               <Link to="/watchlist" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">Watchlist</Link>
               <Link to="/watched" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">Watched</Link>
               <Link to="/trending" className="rounded-lg px-3 py-2 text-sm font-medium text-dark-700 hover:bg-dark-100 dark:text-dark-300 dark:hover:bg-dark-800">Trending</Link>
