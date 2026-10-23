@@ -25,7 +25,7 @@ export const onRequestPost = async ({ request, env }) => {
     );
   }
 
-  let body: { code?: string; redirect_uri?: string; refresh_token?: string; grant_type?: string };
+  let body: { code?: string; redirect_uri?: string; refresh_token?: string; grant_type?: string; code_verifier?: string };
   try {
     body = await request.json();
   } catch {
@@ -35,7 +35,7 @@ export const onRequestPost = async ({ request, env }) => {
     );
   }
 
-  const { code, redirect_uri, refresh_token, grant_type } = body;
+  const { code, redirect_uri, refresh_token, grant_type, code_verifier } = body;
   if (!grant_type || (!code && !refresh_token)) {
     return new Response(
       JSON.stringify({ error: 'Missing grant_type and code/refresh_token.' }),
@@ -47,7 +47,7 @@ export const onRequestPost = async ({ request, env }) => {
     const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
     const form = new URLSearchParams({
       grant_type,
-      ...(code ? { code, redirect_uri } : { refresh_token }),
+      ...(code ? { code, redirect_uri, code_verifier } : { refresh_token }),
     });
 
     const response = await fetch(MAL_TOKEN_URL, {
