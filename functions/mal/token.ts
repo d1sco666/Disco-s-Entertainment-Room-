@@ -44,18 +44,16 @@ export const onRequestPost = async ({ request, env }) => {
   }
 
   try {
-    const basicAuth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
     const form = new URLSearchParams({
       grant_type,
+      client_id: clientId,
+      client_secret: clientSecret,
       ...(code ? { code, redirect_uri, code_verifier } : { refresh_token }),
     });
 
     const response = await fetch(MAL_TOKEN_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: `Basic ${basicAuth}`,
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: form.toString(),
     });
 
