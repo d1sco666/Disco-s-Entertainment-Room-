@@ -13,7 +13,6 @@ const TVShowPage = lazy(() => import('./pages/TVShowPage').then(({ TVShowPage })
 const WatchlistPage = lazy(() => import('./pages/WatchlistPage').then(({ WatchlistPage }) => ({ default: WatchlistPage })));
 const WatchedPage = lazy(() => import('./pages/WatchedPage').then(({ WatchedPage }) => ({ default: WatchedPage })));
 const SimklCallbackPage = lazy(() => import('./pages/SimklCallbackPage').then(({ SimklCallbackPage }) => ({ default: SimklCallbackPage })));
-const AniListCallbackPage = lazy(() => import('./pages/AniListCallbackPage').then(({ AniListCallbackPage }) => ({ default: AniListCallbackPage })));
 const NotFound = lazy(() => import('./pages/NotFound').then(({ NotFound }) => ({ default: NotFound })));
 
 function App() {
@@ -33,7 +32,6 @@ function App() {
           <Route path="watchlist" element={<WatchlistPage />} />
           <Route path="watched" element={<WatchedPage />} />
           <Route path="simkl/callback" element={<SimklCallbackPage />} />
-          <Route path="anilist/callback" element={<AniListCallbackPage />} />
           <Route path="trending" element={<TrendingPage />} />
           <Route path="search" element={<SearchPage />} />
           <Route path="movie/:id" element={<MoviePage />} />
