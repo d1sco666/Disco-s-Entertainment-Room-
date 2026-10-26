@@ -9,30 +9,32 @@ import type { CineSrcMovie, CineSrcTVShow } from '../types';
 function HomeRow({
   title,
   items,
-  type,
+  types,
   loading,
   error,
   emptyMessage,
 }: {
   title: string;
-  items: (CineSrcMovie | CineSrcTVShow)[];
-  type: 'movie' | 'tv';
+  items: (CineSrcMovie | CineSrcTVShow)[] | undefined;
+  types?: ('movie' | 'tv')[] | undefined;
   loading?: boolean;
   error?: string | null;
   emptyMessage?: string;
 }) {
+  const resolvedType = types?.[0] ?? 'movie';
+  const safeItems = items ?? [];
 
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-4">
         <h2 className="netflix-row-title text-xl font-bold text-white">{title}</h2>
-        <Link to={type === 'movie' ? '/movies' : '/tv-shows'} className="text-sm font-medium text-primary-400 hover:text-primary-300">
+        <Link to={resolvedType === 'movie' ? '/movies' : '/tv-shows'} className="text-sm font-medium text-primary-400 hover:text-primary-300">
           Browse All →
         </Link>
       </div>
       <MediaCarousel
-        items={items}
-        type={type}
+        items={safeItems}
+        type={resolvedType}
         loading={loading}
         error={error}
         emptyMessage={emptyMessage}
@@ -61,7 +63,7 @@ export function Home() {
         <HomeRow
           title="Continue Watching"
           items={continueWatching.map((e) => e.item)}
-          type="movie"
+          types={continueWatching.map((e) => e.type)}
           loading={false}
           emptyMessage=""
         />
@@ -108,7 +110,7 @@ export function Home() {
           <HomeRow
             title="Watched"
             items={watched.map((e) => e.item)}
-            type={watched[0]?.type === 'movie' ? 'movie' : 'tv'}
+            types={watched[0]?.type === 'movie' ? ['movie'] : ['tv']}
             loading={false}
             emptyMessage=""
           />
@@ -118,7 +120,7 @@ export function Home() {
           <HomeRow
             title="Watchlist"
             items={watchlist.map((e) => e.item)}
-            type={watchlist[0]?.type === 'movie' ? 'movie' : 'tv'}
+            types={watchlist[0]?.type === 'movie' ? ['movie'] : ['tv']}
             loading={false}
             emptyMessage=""
           />
