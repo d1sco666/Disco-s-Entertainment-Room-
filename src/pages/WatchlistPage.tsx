@@ -73,8 +73,8 @@ export function WatchlistPage() {
             </h2>
             <p className="mt-1 text-sm text-dark-400">
               {connected
-                ? 'Connected. Sync your movie, TV, and anime watchlists and watched histories with Simkl.'
-                : 'Connect Simkl to sync your movie, TV, and anime watchlists and watched histories.'}
+                ? 'Connected. Sync your movie and TV watchlists and watched histories with Simkl.'
+                : 'Connect Simkl to sync your movie and TV watchlists and watched histories.'}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">

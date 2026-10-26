@@ -66,11 +66,11 @@ export function Header() {
 
           <div className="flex-1 max-w-xl mx-8 hidden md:block">
             <form onSubmit={handleSearch} className="relative" role="search">
-              <label htmlFor="search" className="sr-only">Search movies, TV shows, and anime</label>
+              <label htmlFor="search" className="sr-only">Search movies, TV shows</label>
               <Input
                 id="search"
                 type="search"
-                placeholder="Search movies, TV shows, anime..."
+                placeholder="Search movies, TV shows..."
                 value={searchQuery}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                 leftIcon={
@@ -141,11 +141,11 @@ export function Header() {
         {showSearch && (
           <div className="md:hidden py-4 border-t border-dark-200 dark:border-dark-700">
             <form onSubmit={handleSearch} className="relative" role="search">
-              <label htmlFor="mobile-search" className="sr-only">Search movies, TV shows, and anime</label>
+              <label htmlFor="mobile-search" className="sr-only">Search movies, TV shows</label>
               <Input
                 id="mobile-search"
                 type="search"
-                placeholder="Search movies, TV shows, anime..."
+                placeholder="Search movies, TV shows..."
                 value={searchQuery}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchQuery(e.target.value)}
                 leftIcon={

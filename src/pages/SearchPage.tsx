@@ -118,7 +118,7 @@ export function SearchPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <h2 className="text-xl font-semibold text-dark-900 dark:text-white mb-2">Search for content</h2>
-          <p className="text-dark-500 dark:text-dark-400">Enter a movie, TV show, or anime title above to start searching</p>
+          <p className="text-dark-500 dark:text-dark-400">Enter a movie or TV show title above to start searching</p>
         </div>
       )}
     </div>

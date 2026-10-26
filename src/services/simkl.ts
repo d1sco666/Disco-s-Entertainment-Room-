@@ -46,7 +46,6 @@ interface PendingAuth {
 interface SimklItem {
   movie?: SimklTitle;
   show?: SimklTitle;
-  anime?: SimklTitle;
   status?: string;
   last_watched_at?: string | null;
   watched_at?: string | null;
@@ -307,14 +306,6 @@ function diffRemoved(previous: string[], current: string[]) {
   return previous.filter((key) => !currentSet.has(key));
 }
 
-function isWatchedKeyRemoved(removedKeys: Set<string>, key: string) {
-  return [...removedKeys].some((removedKey) => {
-    if (!removedKey.endsWith(':complete')) return removedKey === key;
-    const mediaKey = removedKey.slice(0, -':complete'.length);
-    return key === removedKey || key.startsWith(`${mediaKey}:`);
-  });
-}
-
 function groupWatchlist(media: SavedMedia[]) {
   return {
     movies: media.filter((entry) => entry.type === 'movie').map((entry) => ({
@@ -458,7 +449,6 @@ export const simklAPI = {
 
     if (previous) {
       const localWatchlistRemoved = new Set(diffRemoved(previous.watchlist.local, localWatchlistKeys));
-      const remoteWatchlistRemoved = new Set(diffRemoved(previous.watchlist.remote, remoteWatchlistKeys));
       for (const key of localWatchlistRemoved) {
         const match = remoteTrackedTitles.find((entry) => `${entry.type}:${tmdbId(entry.title)}` === key);
         if (match) {
@@ -472,11 +462,11 @@ export const simklAPI = {
           }
         }
       }
-      nextWatchlist = nextWatchlist.filter((entry) => !remoteWatchlistRemoved.has(idKey(entry)));
+      // Keep all local watchlist items - only add from Simkl, never remove local
+// nextWatchlist = nextWatchlist.filter((entry) => !remoteWatchlistRemoved.has(idKey(entry)));
       removedLocally += localWatchlist.length - nextWatchlist.length;
 
       const localWatchedRemoved = new Set(diffRemoved(previous.watched.local, localWatchedKeys));
-      const remoteWatchedRemoved = new Set(diffRemoved(previous.watched.remote, remoteWatchedKeys));
       for (const key of localWatchedRemoved) {
         const entry = localWatched.find((item) => watchedKey(item) === key);
         if (!entry) continue;
@@ -491,12 +481,7 @@ export const simklAPI = {
           remoteWatchedSet.delete(key);
         }
       }
-      nextWatched = nextWatched.filter((entry) => {
-        const key = watchedKey(entry);
-        return !remoteWatchedRemoved.has(key)
-          && !isWatchedKeyRemoved(localWatchedRemoved, key)
-          && !isWatchedKeyRemoved(remoteWatchedRemoved, key);
-      });
+      nextWatched = nextWatched.filter(() => true);
       removedLocally += localWatched.length - nextWatched.length;
     }
 
