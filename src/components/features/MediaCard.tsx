@@ -179,8 +179,8 @@ function MediaCardComponent({
               <span aria-hidden="true">•</span>
               <span title={runtimeError || undefined}>
                 {isMovie
-                  ? runtime > 0
-                    ? formatRuntime(runtime)
+                  ? Number(runtime) > 0
+                    ? formatRuntime(Number(runtime))
                     : runtimeError
                       ? 'Runtime failed to load'
                       : 'Loading runtime…'
