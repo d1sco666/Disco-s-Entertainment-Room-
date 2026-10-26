@@ -15,7 +15,7 @@ export const Image = forwardRef<HTMLImageElement, ImageProps>(
       square: 'aspect-square',
       video: 'aspect-video',
       cinema: 'aspect-[21/9]',
-      portrait: 'aspect-[2/3]',
+      portrait: 'aspect-[3/4]',
     };
 
     const radii = {

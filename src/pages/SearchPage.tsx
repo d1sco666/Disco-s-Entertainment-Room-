@@ -5,16 +5,13 @@ import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { useSearch } from '../hooks/useMedia';
 import { classNames } from '../utils/helpers';
-import { useAnimeSearch } from '../hooks/useAnime';
-import { AnimeCard } from '../components/features/AnimeCard';
 
 export function SearchPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
-  const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'tv' | 'anime'>('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'movies' | 'tv'>('all');
 
   const { results, loading, error } = useSearch(query, !!query);
-  const animeResults = useAnimeSearch(query, !!query && activeTab === 'anime');
 
   useEffect(() => {
     const q = searchParams.get('q') || '';
@@ -31,8 +28,8 @@ export function SearchPage() {
   const movies = results?.movies || [];
   const tvShows = results?.tvShows || [];
 
-  const currentItems = activeTab === 'movies' ? movies : activeTab === 'tv' ? tvShows : [...movies, ...tvShows];
-  const currentType = activeTab === 'movies' ? 'movie' : activeTab === 'tv' ? 'tv' : movies.length > 0 ? 'movie' : 'tv';
+  const currentItems = activeTab === 'movies' ? movies : tvShows;
+  const currentType = activeTab === 'movies' ? 'movie' : 'tv';
 
   return (
     <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -102,23 +99,10 @@ export function SearchPage() {
           >
             TV Shows ({tvShows.length})
           </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === 'anime'}
-            onClick={() => setActiveTab('anime')}
-            className={classNames(
-              'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
-              activeTab === 'anime'
-                ? 'bg-primary-600 text-white'
-                : 'bg-dark-100 dark:bg-dark-800 text-dark-700 dark:text-dark-300 hover:bg-dark-200 dark:hover:bg-dark-700'
-            )}
-          >
-            Anime
-          </button>
         </div>
       )}
 
-      {query && activeTab !== 'anime' && (
+      {query && (
         <MediaGrid
           items={currentItems}
           type={currentType}
@@ -126,23 +110,6 @@ export function SearchPage() {
           error={error}
           emptyMessage={error ? `Error: ${error}` : `No results found for "${query}"`}
         />
-      )}
-      {query && activeTab === 'anime' && (
-        <section aria-label="Anime search results">
-          {animeResults.loading ? (
-            <p className="py-10 text-center text-dark-400" role="status">Searching anime…</p>
-          ) : animeResults.error ? (
-            <p className="rounded-lg border border-red-900/50 bg-red-950/20 p-4 text-sm text-red-300" role="alert">
-              {animeResults.error}
-            </p>
-          ) : animeResults.items.length === 0 ? (
-            <p className="py-10 text-center text-dark-400">No anime found for “{query}”.</p>
-          ) : (
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
-              {animeResults.items.map((item) => <AnimeCard key={item.id} item={item} />)}
-            </div>
-          )}
-        </section>
       )}
 
       {!query && (

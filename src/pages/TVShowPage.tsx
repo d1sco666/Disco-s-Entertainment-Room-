@@ -9,7 +9,7 @@ import { useMediaTrailer, useTVShowDetails, useSeasonDetails } from '../hooks/us
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
 import { formatYear, formatDate, formatRuntime } from '../utils/helpers';
 import { getVimeusEpisodeEmbedUrl } from '../utils/vimeus';
-import { getVidstuckEpisodeEmbedUrl, getZxcstreamEpisodePlayerUrl } from '../utils/additionalPlayers';
+import { getVidstuckEpisodeEmbedUrl, getZxcstreamEpisodePlayerUrl, getAetherEpisodeEmbedUrl } from '../utils/additionalPlayers';
 import { useState } from 'react';
 import type { CineSrcEpisode } from '../types';
 
@@ -33,7 +33,7 @@ export function TVShowPage() {
             <Card><CardContent className="aspect-video" /></Card>
             <Card><CardContent className="space-y-4"><div className="h-6 w-3/4" /><div className="h-4 w-1/2" /><div className="h-4 w-1/3" /></CardContent></Card>
           </div>
-          <Card><CardContent className="aspect-[2/3]" /></Card>
+          <Card><CardContent className="aspect-[3/4]" /></Card>
         </div>
       </div>
     );
@@ -110,19 +110,18 @@ export function TVShowPage() {
             {
               id: 'zxcstream',
               name: 'Zxcstream',
-              getSrc: (dubLanguage) => {
-                if (!dubLanguage) throw new Error('Choose an audio language to open this episode in Zxcstream.');
-                return getZxcstreamEpisodePlayerUrl(
-                  show.tmdbId,
-                  selectedSeason,
-                  selectedEpisode.episodeNumber,
-                  dubLanguage
-                );
-              },
-              languageOptions: [
-                { value: 'en', label: 'English' },
-                { value: 'es', label: 'Español' },
-              ],
+              getSrc: () => getZxcstreamEpisodePlayerUrl(
+                show.tmdbId,
+                selectedSeason,
+                selectedEpisode.episodeNumber,
+                'en'
+              ),
+              unavailableReason: !show.tmdbId ? 'A TMDB ID is required' : undefined,
+            },
+            {
+              id: 'aether',
+              name: 'Aether',
+              getSrc: () => getAetherEpisodeEmbedUrl(show.tmdbId, selectedSeason, selectedEpisode.episodeNumber),
               unavailableReason: !show.tmdbId ? 'A TMDB ID is required' : undefined,
             },
           ]}
@@ -144,7 +143,7 @@ export function TVShowPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2 space-y-8">
             <div className="flex flex-col sm:flex-row gap-6">
-              <div className="relative aspect-[2/3] w-full sm:w-72 flex-shrink-0 rounded-xl overflow-hidden">
+              <div className="relative aspect-[3/4] w-full sm:w-72 flex-shrink-0 rounded-xl overflow-hidden">
                 <Image
                   src={show.poster}
                   alt={`${show.name} poster`}

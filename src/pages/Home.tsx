@@ -1,170 +1,208 @@
 import { Link } from 'react-router-dom';
 import { MediaCarousel } from '../components/features/MediaCarousel';
-import { MediaCard } from '../components/features/MediaCard';
 import { useTrendingMovies, useTrendingTVShows, usePopularMovies, usePopularTVShows } from '../hooks/useMedia';
 import { useMediaLibrary } from '../hooks/useMediaLibrary';
-import type { ContinueWatchingItem, SavedMedia } from '../types';
-import { AnimeCard } from '../components/features/AnimeCard';
-import { useAnimeLibrary } from '../hooks/useAnimeLibrary';
+import { Button } from '../components/ui/Button';
+import { Image } from '../components/ui/Image';
+import { Badge } from '../components/ui/Badge';
+import { formatRuntime, formatYear } from '../utils/helpers';
+import type { CineSrcMovie, CineSrcTVShow } from '../types';
 
-type LibraryEntry = SavedMedia | ContinueWatchingItem;
 
-function LibraryGrid({
+
+
+function HomeRow({
+  title,
   items,
+  type,
+  loading,
+  error,
   emptyMessage,
-  removeLabel,
-  removeIconOnly = false,
-  onRemove,
 }: {
-  items: LibraryEntry[];
-  emptyMessage: string;
-  removeLabel: string;
-  removeIconOnly?: boolean;
-  onRemove: (type: SavedMedia['type'], id: string) => void;
+  title: string;
+  items: (CineSrcMovie | CineSrcTVShow)[];
+  type: 'movie' | 'tv';
+  loading?: boolean;
+  error?: string | null;
+  emptyMessage?: string;
 }) {
-  if (items.length === 0) {
-    return <p className="py-6 text-center text-dark-500 dark:text-dark-400">{emptyMessage}</p>;
-  }
-
+  
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
-      {items.map((entry) => (
-        <MediaCard
-          key={`${entry.type}-${entry.item.id}`}
-          item={entry.item}
-          type={entry.type}
-          glossySurface
-          subtitle={'episode' in entry && entry.episode
-            ? `S${entry.episode.seasonNumber.toString().padStart(2, '0')}E${entry.episode.episodeNumber.toString().padStart(2, '0')} · ${entry.episode.name}`
-            : undefined}
-          onRemove={() => onRemove(entry.type, entry.item.id)}
-          removeLabel={removeLabel}
-          removeIconOnly={removeIconOnly}
-        />
-      ))}
-    </div>
+    <section className="mb-8">
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="netflix-row-title text-xl font-bold text-white">{title}</h2>
+        <Link to={type === 'movie' ? '/movies' : '/tv-shows'} className="text-sm font-medium text-primary-400 hover:text-primary-300">
+          Browse All →
+        </Link>
+      </div>
+      <MediaCarousel
+        items={items}
+        type={type}
+        loading={loading}
+        error={error}
+        emptyMessage={emptyMessage}
+        glossyCards
+      />
+    </section>
   );
 }
 
 export function Home() {
-  const { continueWatching, removeFromContinueWatching } = useMediaLibrary();
-  const animeLibrary = useAnimeLibrary();
+  const { continueWatching, storageError } = useMediaLibrary();
   const { movies: trendingMovies, loading: trendingMoviesLoading, error: trendingMoviesError } = useTrendingMovies();
   const { shows: trendingShows, loading: trendingShowsLoading, error: trendingShowsError } = useTrendingTVShows();
   const { movies: popularMovies, loading: popularMoviesLoading, error: popularMoviesError } = usePopularMovies();
   const { shows: popularShows, loading: popularShowsLoading, error: popularShowsError } = usePopularTVShows();
 
+  const featured = trendingMovies[0];
+
   return (
-    <div className="relative isolate space-y-12 overflow-hidden bg-app-background pb-16">
+    <div className="relative isolate bg-netflix-dark min-h-screen">
+      {/* Decorative background blobs */}
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 z-0 overflow-hidden select-none">
-        <svg className="absolute right-[8%] top-24 h-12 w-8 text-dark-500/30" viewBox="0 0 32 64" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="16" cy="8" r="6" />
-          <path d="M16 14v22m-9-14 9 5 9-5M7 22l-4 11m22-11 4 11M16 36l-8 12m8-12 8 12M8 48l-3 12m3-12 6 2m10-2 3 12m-3-12-6 2" />
-          <path d="M13 7h.1M19 7h.1M13 11h6" />
-        </svg>
-        <svg className="absolute left-[5%] top-[42%] h-10 w-7 text-dark-500/25" viewBox="0 0 32 64" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="16" cy="8" r="6" />
-          <path d="M16 14v22m-9-14 9 5 9-5M7 22l-4 11m22-11 4 11M16 36l-8 12m8-12 8 12M8 48l-3 12m3-12 6 2m10-2 3 12m-3-12-6 2" />
-          <path d="M13 7h.1M19 7h.1M13 11h6" />
-        </svg>
-        <svg className="absolute bottom-16 right-[14%] h-14 w-9 text-dark-500/25" viewBox="0 0 32 64" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="16" cy="8" r="6" />
-          <path d="M16 14v22m-9-14 9 5 9-5M7 22l-4 11m22-11 4 11M16 36l-8 12m8-12 8 12M8 48l-3 12m3-12 6 2m10-2 3 12m-3-12-6 2" />
-          <path d="M13 7h.1M19 7h.1M13 11h6" />
-        </svg>
+        <div className="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] bg-primary-600/20 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[-10%] h-[500px] w-[500px] bg-primary-600/10 rounded-full blur-[120px]" />
       </div>
-      <section aria-labelledby="continue-watching-title" className="deferred-home-section relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="mb-2 flex items-center justify-between">
-          <h2 id="continue-watching-title" className="text-2xl font-bold text-dark-900 dark:text-white">Continue Watching</h2>
-        </div>
-        <p className="mb-5 text-sm text-dark-500 dark:text-dark-400">
-          Your recently started titles. Playback progress is not available from the embedded player, so continuing opens the title page.
-        </p>
-        <LibraryGrid
-          items={continueWatching}
-          emptyMessage="Start a movie or TV episode and it will appear here."
-          removeLabel="Remove from Continue Watching"
-          removeIconOnly
-          onRemove={removeFromContinueWatching}
-        />
-        {animeLibrary.continueWatching.length > 0 && (
-          <div className="mt-8">
-            <h3 className="mb-4 text-lg font-semibold text-dark-900 dark:text-white">Continue Watching Anime</h3>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-8">
-              {animeLibrary.continueWatching.map((entry) => (
-                <AnimeCard
-                  key={entry.item.id}
-                  item={entry.item}
-                  subtitle={`Episode ${entry.episode}`}
-                  onRemove={() => animeLibrary.removeFromContinueWatching(entry.item.id)}
-                  removeLabel="Remove from Continue Watching"
-                />
-              ))}
+
+      <section className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+        {/* Hero section */}
+        {featured ? (
+          <div className="relative mb-8 rounded-xl overflow-hidden shadow-2xl group cursor-pointer" onClick={() => {}}>
+            <div className="absolute inset-0">
+              <Image
+                src={featured.backdrop || featured.poster}
+                alt={`${featured.title} backdrop`}
+                fallback="/placeholder-backdrop.svg"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-netflix-black via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-netflix-black/40 to-netflix-black" />
             </div>
+            <div className="absolute inset-0 flex items-end p-8 group-hover:bg-black/30 transition-backdrop">
+              <div className="mb-4 flex items-center gap-3">
+                <Badge variant="primary" size="lg">
+                  <span aria-hidden="true">★</span> {featured.rating.toFixed(1)}
+                </Badge>
+                {featured.ageRating && <span className="text-xs font-medium text-white">{featured.ageRating}</span>}
+              </div>
+              <h1 className="text-4xl md:text-6xl font-bold text-white mb-4 group-hover:text-primary-400 transition-colors">
+                {isMovieTitle(featured) ? featured.title : (featured as CineSrcTVShow).name}
+              </h1>
+              <p className="text-dark-300 dark:text-dark-200 text-lg mb-6 line-clamp-2 max-w-2xl">
+                {featured.overview}
+              </p>
+              <div className="flex flex-wrap gap-4">
+                <Button
+                  size="lg"
+                  className="netflix-button-red px-8 py-3 rounded-lg text-lg font-semibold hover:netflix-button-red-hover transition-colors flex items-center gap-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  <span className="flex items-center gap-2">
+                    <svg className="h-6 w-6" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                    Play
+                  </span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="px-8 py-3 rounded-lg text-lg font-semibold border-white text-white hover:bg-white/10 transition-colors flex items-center gap-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                  More Info
+                </Button>
+              </div>
+              <div className="mt-4 flex items-center gap-4 text-dark-300 text-sm">
+                <span>{isMovieTitle(featured) ? formatRuntime(featured.runtime) : `${(featured as CineSrcTVShow).numberOfSeasons} Seasons`}</span>
+                <span aria-hidden="true">•</span>
+                <span>{isMovieTitle(featured) ? formatYear(featured.releaseDate) : formatYear((featured as CineSrcTVShow).firstAirDate)}</span>
+              </div>
+            </div>
+            <Link to={isMovieTitle(featured) ? `/movie/${(featured as CineSrcMovie).id}` : `/tv/${(featured as CineSrcTVShow).id}`} className="absolute inset-0 z-20" />
+          </div>
+        ) : (
+          <div className="mb-8 rounded-xl bg-netflix-black border border-netflix-gray p-8 text-center">
+            <h2 className="text-2xl font-bold text-white mb-2">Featured</h2>
+            <p className="text-dark-400">No featured title available right now.</p>
           </div>
         )}
-        {animeLibrary.storageError && <p className="mt-4 text-sm text-red-400" role="alert">{animeLibrary.storageError}</p>}
-      </section>
 
-      <section aria-labelledby="trending-movies-title" className="deferred-home-section relative z-10 mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 id="trending-movies-title" className="text-2xl font-bold text-dark-900 dark:text-white">Trending Movies</h2>
-          <Link to="/movies" className="text-primary-600 dark:text-primary-400 hover:underline text-sm font-medium">View All</Link>
-        </div>
-        <MediaCarousel
+        {continueWatching.length > 0 && (
+          <HomeRow
+            title="Continue Watching"
+            items={continueWatching.map((e) => e.item)}
+            type="movie"
+            loading={false}
+            emptyMessage=""
+          />
+        )}
+
+        <HomeRow
+          title="Trending Movies"
           items={trendingMovies}
           type="movie"
-          glossyCards
           loading={trendingMoviesLoading}
           error={trendingMoviesError}
           emptyMessage="No trending movies available"
         />
-      </section>
 
-      <section aria-labelledby="trending-shows-title" className="deferred-home-section relative z-10 mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 id="trending-shows-title" className="text-2xl font-bold text-dark-900 dark:text-white">Trending TV Shows</h2>
-          <Link to="/tv-shows" className="text-primary-600 dark:text-primary-400 hover:underline text-sm font-medium">View All</Link>
-        </div>
-        <MediaCarousel
+        <HomeRow
+          title="Trending TV Shows"
           items={trendingShows}
           type="tv"
-          glossyCards
           loading={trendingShowsLoading}
           error={trendingShowsError}
           emptyMessage="No trending TV shows available"
         />
-      </section>
 
-      <section aria-labelledby="popular-movies-title" className="deferred-home-section relative z-10 mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 id="popular-movies-title" className="text-2xl font-bold text-dark-900 dark:text-white">Popular Movies</h2>
-          <Link to="/movies" className="text-primary-600 dark:text-primary-400 hover:underline text-sm font-medium">View All</Link>
-        </div>
-        <MediaCarousel
+        <HomeRow
+          title="Popular Movies"
           items={popularMovies}
           type="movie"
-          glossyCards
           loading={popularMoviesLoading}
           error={popularMoviesError}
           emptyMessage="No popular movies available"
         />
-      </section>
 
-      <section aria-labelledby="popular-shows-title" className="deferred-home-section relative z-10 mx-auto w-full max-w-screen-2xl px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 id="popular-shows-title" className="text-2xl font-bold text-dark-900 dark:text-white">Popular TV Shows</h2>
-          <Link to="/tv-shows" className="text-primary-600 dark:text-primary-400 hover:underline text-sm font-medium">View All</Link>
-        </div>
-        <MediaCarousel
+        <HomeRow
+          title="Popular TV Shows"
           items={popularShows}
           type="tv"
-          glossyCards
           loading={popularShowsLoading}
           error={popularShowsError}
           emptyMessage="No popular TV shows available"
         />
+
+        {storageError && <p className="mt-4 text-sm text-red-400" role="alert">{storageError}</p>}
+
+        {watched.length > 0 && (
+          <HomeRow
+            title="Watched"
+            items={watched.map((e) => e.item)}
+            type={watched[0]?.type === 'movie' ? 'movie' : 'tv'}
+            loading={false}
+            emptyMessage=""
+          />
+        )}
+
+        {watchlist.length > 0 && (
+          <HomeRow
+            title="Watchlist"
+            items={watchlist.map((e) => e.item)}
+            type={watchlist[0]?.type === 'movie' ? 'movie' : 'tv'}
+            loading={false}
+            emptyMessage=""
+          />
+        )}
       </section>
     </div>
   );
+}
+
+function isMovieTitle(item: CineSrcMovie | CineSrcTVShow): item is CineSrcMovie {
+  return (item as CineSrcMovie).title !== undefined;
 }

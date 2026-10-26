@@ -71,50 +71,6 @@ export interface CineSrcSearchResult {
   totalPages: number;
 }
 
-export interface AnimeTitle {
-  id: string;
-  title: string;
-  alternative?: string;
-  native?: string;
-  slug?: string;
-  year: number;
-  overview: string;
-  poster: string;
-  backdrop?: string;
-  score: number;
-  status: string;
-  season?: string;
-  source?: string;
-  type?: string;
-  duration?: string;
-  rating?: string;
-  episodes: number;
-  genres: string[];
-  studios?: string[];
-  isSub?: boolean;
-  isDub?: boolean;
-  malId?: number;
-  aniId?: number;
-  sId?: number;
-  seasons?: AnimeTitle[];
-}
-
-export interface AnimeWatchHistoryItem {
-  item: AnimeTitle;
-  watchedAt: number;
-}
-
-export interface AnimeSimklLibrary {
-  watchlist: AnimeTitle[];
-  watched: AnimeWatchHistoryItem[];
-}
-
-export interface AnimeContinueWatchingItem {
-  item: AnimeTitle;
-  episode: number;
-  lastWatchedAt: number;
-}
-
 export type SavedMedia =
   | { type: 'movie'; item: CineSrcMovie }
   | { type: 'tv'; item: CineSrcTVShow };
@@ -136,3 +92,5 @@ export type WatchedItem = SavedMedia & {
     name: string;
   };
 };
+
+

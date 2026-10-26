@@ -1,12 +1,11 @@
 # Entertainment Room
 
-A personal movie, TV, and anime discovery website using **TMDB** and **AniList** for title metadata, embedded players for video, and **Simkl** for optional watchlist and watched-history sync.
+A personal movie and TV discovery website using **TMDB** for title metadata, embedded players for video, and **Simkl** for optional watchlist and watched-history sync.
 
 ## Features
 
 - 🎬 **Movie & TV Discovery** - Popular, trending, search, posters, ratings, and certifications from TMDB
-- 🎥 **Player Choice** - Choose between Vimeus, CineSrc, Vidstuck, and Zxcstream for movies and TV episodes
-- 🍥 **Anime Discovery** - Browse non-explicit anime by genre, format, status, and release year, with MAL and AniList IDs
+- 🎥 **Player Choice** - Choose between Vimeus, CineSrc, Vidstuck, Zxcstream, and Aether for movies and TV episodes
 - 🔍 **Search Functionality** - Find content instantly
 - 📱 **Responsive Design** - Works on all devices
 - 🌙 **Dark Mode** - Easy on the eyes
@@ -18,8 +17,8 @@ A personal movie, TV, and anime discovery website using **TMDB** and **AniList**
 - **Styling**: Tailwind CSS v4
 - **State Management**: React hooks
 - **Routing**: React Router v7
-- **Video Player**: Vimeus, CineSrc, Vidstuck, and Zxcstream
-- **Metadata APIs**: TMDB and AniList
+- **Video Player**: Vimeus, CineSrc, Vidstuck, Zxcstream, and Aether
+- **Metadata APIs**: TMDB
 - **Library Sync**: Simkl OAuth 2.0 (PKCE)
 - **Authentication**: Auth0 SPA SDK
 - **Build and lint**: Vite 6 and ESLint 9
@@ -60,8 +59,6 @@ npm run dev
 |----------|-------------|----------|
 | `VITE_TMDB_API_KEY` | TMDB v3 API key used by the browser to load catalog metadata | Yes |
 | `VITE_SIMKL_CLIENT_ID` | Public Simkl Auth V2 client ID (the client ID provided for this project is the default) | No |
-| `VITE_ANILIST_CLIENT_ID` | Public AniList OAuth client ID | No |
-| `VITE_ANILIST_CLIENT_SECRET` | AniList OAuth client secret | No |
 | `VITE_AUTH0_DOMAIN` | Auth0 tenant domain for SPA login | No |
 | `VITE_AUTH0_CLIENT_ID` | Auth0 Single Page Application client ID | No |
 | `VITE_AUTH0_AUDIENCE` | Optional Auth0 API audience for access-token requests | No |
@@ -80,7 +77,7 @@ Vimeus documents the `view_key` as a public embed parameter and requires it in e
 
 - Register the exact callback URL(s) in the Simkl developer app settings: `http://localhost:3000/simkl/callback` for local development and `https://your-site-domain/simkl/callback` for production.
 - Use an Auth V2 app/device client without a client secret. The integration uses OAuth PKCE and requests `media:read media:write`; it does not store a client secret.
-- Connect and manually sync movie, TV, and anime libraries from the **Simkl Sync** section on the Watchlist page. The first sync merges libraries; later syncs mirror watchlist and watched-history removals in either direction. Anime uses MAL and AniList IDs.
+- Connect and manually sync movie and TV libraries from the **Simkl Sync** section on the Watchlist page. The first sync merges libraries; later syncs mirror watchlist and watched-history removals in either direction.
 - Movie and episode watched states are explicit actions on detail pages; opening the embedded player does not mark content watched.
 - OAuth tokens are stored in this browser's local storage. Disconnecting removes the local tokens and sync snapshot.
 
@@ -103,15 +100,15 @@ src/
 
 ## Features in Detail
 
-### Video Player (Vimeus, CineSrc, Vidstuck, and Zxcstream)
+### Video Player (Vimeus, CineSrc, Vidstuck, Zxcstream, and Aether)
 - Choose a provider from the picker when starting a movie or episode.
 - The providers use the title's TMDB ID. Vimeus URLs follow its documented embed format and include the configured `view_key`.
 - Movie embed: `https://vimeus.com/e/movie?tmdb={tmdb_id}&view_key={view_key}`
 - TV episode embed: `https://vimeus.com/e/serie?tmdb={tmdb_id}&se={season}&ep={episode}&view_key={view_key}`
 - See the [Vimeus API documentation](https://vimeus.com/) for supported embed URLs and options.
 - Vidstuck embeds use `https://vidstuck.cc/embed/movie/{tmdb_id}` for movies and `https://vidstuck.cc/embed/tv/{tmdb_id}/{season}/{episode}` for TV episodes. See the [Vidstuck documentation](https://vidstuck.cc/documentation).
-- Zxcstream opens movies at `https://zxcstream.cc/player/movie/{tmdb_id}` and episodes at `https://zxcstream.cc/player/tv/{tmdb_id}/{season}/{episode}`. Choose English (`dubLang=en`) or Spanish (`dubLang=es`) when selecting Zxcstream.
-- Anime metadata is browsed from **AniList** and matched to MAL IDs. Both IDs are stored with anime library entries. Anime entries include format, status, season, and source fields. Anime watchlist and watched history sync with Simkl using MAL and AniList IDs; continue-watching remains local.
+- Zxcstream opens movies at `https://zxcstream.cc/player/movie/{tmdb_id}` and episodes at `https://zxcstream.cc/player/tv/{tmdb_id}/{season}/{episode}`.
+- Aether opens movies at `https://aether.st/embed/movie/{tmdb_id}` and episodes at `https://aether.st/embed/tv/{tmdb_id}/{season}/{episode}`.
 
 ### Content Browsing
 - Trending movies & TV shows
@@ -129,7 +126,6 @@ src/
 - **Search** - Debounced search results
 - **Movie Detail** - Info and provider picker for embedded playback
 - **TV Show Detail** - Season/episode selector and provider picker for embedded playback
-- **Anime** - Genre, format, status, and year filters, AniList metadata and IDs, local anime library.
 - **Watchlist** - Local collection with optional Simkl synchronization
 - **Watched** - Explicitly marked movies and episodes, optionally synced with Simkl
 

@@ -41,3 +41,13 @@ export function getZxcstreamEpisodePlayerUrl(
   url.searchParams.set('dubLang', dubLanguage);
   return url.toString();
 }
+
+export function getAetherMovieEmbedUrl(tmdbId?: number) {
+  validateMediaIds(tmdbId);
+  return `https://aether.st/embed/movie/${tmdbId}`;
+}
+
+export function getAetherEpisodeEmbedUrl(tmdbId: number | undefined, season: number, episode: number) {
+  validateMediaIds(tmdbId, season, episode);
+  return `https://aether.st/embed/tv/${tmdbId}/${season}/${episode}`;
+}

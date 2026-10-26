@@ -1,9 +1,9 @@
-import { memo, useEffect, useRef, useState } from 'react';
+import { memo, useRef, useEffect, useState } from 'react';
+import { Button } from '../ui/Button';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '../ui/Card';
 import { Image } from '../ui/Image';
 import { Badge } from '../ui/Badge';
-import { Button } from '../ui/Button';
 import { formatYear, formatRuntime } from '@/utils/helpers';
 import { tmdbAPI } from '@/services/tmdb';
 import { useMediaLibrary } from '@/hooks/useMediaLibrary';
@@ -110,22 +110,22 @@ function MediaCardComponent({
       variant="default"
       hover
       padding="none"
-      className={`relative h-full flex flex-col border border-dark-700 shadow-[0_4px_18px_rgba(0,0,0,0.45)] ${
-        glossySurface ? 'bg-dark-800' : 'bg-black'
+      className={`relative h-full flex flex-col border border-netflix-gray shadow-lg ${
+        glossySurface ? 'bg-netflix-dark' : 'bg-netflix-black'
       }`}
     >
       <Link
         to={isMovie ? `/movie/${item.id}` : `/tv/${item.id}`}
         className={glossySurface ? 'group flex flex-1 flex-col' : 'block group'}
       >
-        <div className="relative aspect-[2/3] overflow-hidden border-b border-dark-700 bg-dark-900">
+        <div className="relative aspect-[3/4] overflow-hidden border-b border-netflix-gray bg-netflix-black">
           <Image
             src={poster}
             alt={`${title} poster`}
             fallback="/placeholder-poster.svg"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="absolute inset-0 bg-gradient-to-t from-netflix-black via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
           <div className="absolute top-2 left-2">
             <Badge variant="primary" size="sm" aria-label={`Rating ${rating.toFixed(1)} out of 10`}>
@@ -137,7 +137,7 @@ function MediaCardComponent({
             <Badge
               variant="default"
               size="sm"
-              className="bg-black/70 text-white"
+              className="bg-netflix-black/80 text-white"
               aria-label={ageRating ? `Age rating ${ageRating}` : 'Age rating unavailable'}
               title={ageRating ? `Age rating: ${ageRating}` : runtimeError || 'Age rating unavailable'}
             >
@@ -159,7 +159,7 @@ function MediaCardComponent({
 
           <div className="absolute bottom-2 left-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100">
             {genres.map((genre) => (
-              <Badge key={genre} variant="default" size="sm" className="bg-black/50 text-white border-white/20">
+              <Badge key={genre} variant="default" size="sm" className="bg-netflix-black/80 text-white border-white/20">
                 {genre}
               </Badge>
             ))}
@@ -167,7 +167,10 @@ function MediaCardComponent({
         </div>
 
         {!posterOnly && (
-          <CardContent className={`flex-1 flex flex-col p-4 ${glossySurface ? 'poster-card-gloss' : ''}`}>
+          <CardContent
+        className={`flex-1 flex flex-col p-4 ${glossySurface ? 'poster-card-gloss' : ''}`}
+        onMouseEnter={e => e.target.style.transform = 'scale(1.02)'}
+        onMouseLeave={e => e.target.style.transform = 'scale(1)'}>
             <h3 className="font-semibold text-dark-900 dark:text-white line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
               {title}
             </h3>
@@ -214,7 +217,7 @@ function MediaCardComponent({
             type="button"
             variant="ghost"
             size="icon"
-            className="absolute right-2 top-2 z-10 rounded-full bg-black/75 text-white hover:bg-black"
+            className="absolute right-2 top-2 z-10 rounded-full bg-netflix-black/75 text-white hover:bg-netflix-black"
             onClick={onRemove}
             aria-label={`${removeLabel}: ${title}`}
             title={removeLabel}

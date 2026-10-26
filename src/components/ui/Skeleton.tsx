@@ -51,7 +51,7 @@ export function SkeletonText({ lines = 3, className }: { lines?: number; classNa
 export function SkeletonCard({ className }: { className?: string }) {
   return (
     <div className={classNames('overflow-hidden rounded-lg border border-dark-700 bg-black', className)} aria-hidden="true">
-      <Skeleton variant="rectangular" className="aspect-[2/3] rounded-none" />
+      <Skeleton variant="rectangular" className="aspect-[3/4] rounded-none" />
       <div className="space-y-2 p-4">
         <Skeleton variant="text" width="80%" />
         <div className="flex items-center gap-2">
