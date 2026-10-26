@@ -45,7 +45,7 @@ function HomeRow({
 }
 
 export function Home() {
-  const { continueWatching, watched, watchlist, storageError } = useMediaLibrary();
+  const { continueWatching, storageError } = useMediaLibrary();
   const { movies: trendingMovies, loading: trendingMoviesLoading, error: trendingMoviesError } = useTrendingMovies();
   const { shows: trendingShows, loading: trendingShowsLoading, error: trendingShowsError } = useTrendingTVShows();
   const { movies: popularMovies, loading: popularMoviesLoading, error: popularMoviesError } = usePopularMovies();
@@ -61,9 +61,17 @@ export function Home() {
 
       <section className="relative z-10 mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         <HomeRow
-          title="Continue Watching"
-          items={continueWatching.map((e) => e.item)}
-          types={continueWatching.map((e) => e.type)}
+          title="Continue Watching Movies"
+          items={continueWatching.filter((e) => e.type === 'movie').map((e) => e.item)}
+          types={continueWatching.filter((e) => e.type === 'movie').map((e) => e.type)}
+          loading={false}
+          emptyMessage=""
+        />
+
+        <HomeRow
+          title="Continue Watching TV Shows"
+          items={continueWatching.filter((e) => e.type === 'tv').map((e) => e.item)}
+          types={continueWatching.filter((e) => e.type === 'tv').map((e) => e.type)}
           loading={false}
           emptyMessage=""
         />
@@ -105,26 +113,6 @@ export function Home() {
         />
 
         {storageError && <p className="mt-4 text-sm text-red-400" role="alert">{storageError}</p>}
-
-        {watched.length > 0 && (
-          <HomeRow
-            title="Watched"
-            items={watched.map((e) => e.item)}
-            types={watched[0]?.type === 'movie' ? ['movie'] : ['tv']}
-            loading={false}
-            emptyMessage=""
-          />
-        )}
-
-        {watchlist.length > 0 && (
-          <HomeRow
-            title="Watchlist"
-            items={watchlist.map((e) => e.item)}
-            types={watchlist[0]?.type === 'movie' ? ['movie'] : ['tv']}
-            loading={false}
-            emptyMessage=""
-          />
-        )}
       </section>
     </div>
   );
