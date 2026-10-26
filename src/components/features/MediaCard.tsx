@@ -159,7 +159,7 @@ function MediaCardComponent({
 
           <div className="absolute bottom-2 left-2 right-2 flex gap-1.5 opacity-0 group-hover:opacity-100">
             {genres.map((genre) => (
-              <Badge key={genre} variant="default" size="sm" className="bg-netflix-black/80 text-white border-white/20">
+              <Badge key={genre} variant="default" size="sm" className="text-white border-white/20">
                 {genre}
               </Badge>
             ))}
@@ -168,7 +168,7 @@ function MediaCardComponent({
 
         {!posterOnly && (
           <CardContent
-        className={`flex-1 flex flex-col p-4 ${glossySurface ? 'poster-card-gloss' : ''}`}
+        className="flex-1 flex flex-col p-4"
         onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.02)'}
         onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}>
             <h3 className="font-semibold text-dark-900 dark:text-white line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
