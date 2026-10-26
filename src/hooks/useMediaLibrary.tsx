@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import type { ContinueWatchingItem, SavedMedia, WatchedItem } from '../types';
+import type { ContinueWatchingItem, CineSrcTVShow, SavedMedia, WatchedItem } from '../types';
 
 const WATCHLIST_KEY = 'entertainment-room-watchlist';
 const CONTINUE_WATCHING_KEY = 'entertainment-room-continue-watching';
@@ -168,6 +168,41 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
     const key = watchedMediaKey(media.type, media.item.id, episode);
     setWatched((current) => [entry, ...current.filter((item) => watchedMediaKey(item.type, item.item.id, item.episode) !== key)]);
   }, []);
+
+  const markSeasonWatched = useCallback((id: string, seasonNumber: number) => {
+    setWatched((current) => {
+      // Find the TV show entry with numberOfSeasons property
+      const showEntry = current.find(
+        (item) => item.type === 'tv' && item.item?.numberOfSeasons != null
+      );
+      if (!showEntry) return current;
+
+      const tvShow = showEntry.item as CineSrcTVShow;
+      const totalEpisodes = tvShow.numberOfEpisodes || 0;
+      const episodesPerSeason = totalEpisodes / Math.max(tvShow.numberOfSeasons || 1, 1);
+
+      // Create watched entries for each episode in this season
+      const newEntries: WatchedItem[] = [];
+      for (let ep = 1; ep <= episodesPerSeason; ep++) {
+        const episodeKey = watchedMediaKey('tv', id, { seasonNumber, episodeNumber: ep, name: `Episode ${ep}` });
+        // Remove existing entry for this episode if it exists
+        current = current.filter(
+          (item) => watchedMediaKey(item.type, item.item.id, item.episode) !== episodeKey
+        );
+        // Add new watched entry
+        newEntries.push({
+          type: 'tv',
+          item: tvShow,
+          watchedAt: Date.now(),
+          episode: { seasonNumber, episodeNumber: ep, name: `Episode ${ep}` },
+        });
+      }
+
+      // Replace watched list with existing non-TV entries plus new season entries
+      return [...current.filter((item) => item.type !== 'tv' || item.item.id !== id), ...newEntries];
+    });
+  }, []);
+
   const removeFromWatched = useCallback((type: SavedMedia['type'], id: string, episode?: WatchedItem['episode']) => {
     const key = watchedMediaKey(type, id, episode);
     setWatched((current) => current.filter((item) => watchedMediaKey(item.type, item.item.id, item.episode) !== key));
@@ -191,6 +226,7 @@ export function MediaLibraryProvider({ children }: { children: ReactNode }) {
       removeFromContinueWatching,
       isInWatchlist,
       markWatched,
+      markSeasonWatched,
       removeFromWatched,
       isWatched,
       replaceWatchlist,
