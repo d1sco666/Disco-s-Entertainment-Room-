@@ -169,8 +169,8 @@ function MediaCardComponent({
         {!posterOnly && (
           <CardContent
         className={`flex-1 flex flex-col p-4 ${glossySurface ? 'poster-card-gloss' : ''}`}
-        onMouseEnter={e => e.target.style.transform = 'scale(1.02)'}
-        onMouseLeave={e => e.target.style.transform = 'scale(1)'}>
+        onMouseEnter={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1.02)'}
+        onMouseLeave={e => (e.currentTarget as HTMLElement).style.transform = 'scale(1)'}>
             <h3 className="font-semibold text-dark-900 dark:text-white line-clamp-1 group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
               {title}
             </h3>

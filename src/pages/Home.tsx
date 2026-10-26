@@ -48,7 +48,7 @@ function HomeRow({
 }
 
 export function Home() {
-  const { continueWatching, storageError } = useMediaLibrary();
+  const { continueWatching, watched, watchlist, storageError } = useMediaLibrary();
   const { movies: trendingMovies, loading: trendingMoviesLoading, error: trendingMoviesError } = useTrendingMovies();
   const { shows: trendingShows, loading: trendingShowsLoading, error: trendingShowsError } = useTrendingTVShows();
   const { movies: popularMovies, loading: popularMoviesLoading, error: popularMoviesError } = usePopularMovies();
